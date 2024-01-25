@@ -2,14 +2,7 @@
 //
 #include <iostream> 
 #include <Windows.h>
-
-enum Snake_Move_Direction
-{
-	MOVE_LEFT = 0,
-	MOVE_RIGHT = 1,
-	MOVE_TOP = 2,
-	MOVE_BOTTOM = 3
-};
+#include <cassert>
 
 struct Vector2_Int
 {
@@ -25,8 +18,6 @@ struct Rect2D_Int
 	int min_y;
 };
 
-bool Vector2_equals(Vector2_Int vec1, Vector2_Int vec2);
-
 struct Snake_BodyPart
 {
 	Vector2_Int position;
@@ -36,8 +27,9 @@ struct Snake_BodyPart
 struct Snake
 {
 	Snake_BodyPart* snake_body;
-	Snake_Move_Direction move_direction;
 	int body_size;
+	Vector2_Int head_move_direction;
+	Vector2_Int tail_last_position;
 };
 
 struct Reward
@@ -54,38 +46,58 @@ struct Grid
 	Rect2D_Int playeable_rect;
 };
 
-Snake_Move_Direction last_player_move_direction = Snake_Move_Direction::MOVE_RIGHT;
+Vector2_Int move_input = { 1, 0 };
+
+bool Vector2_equals(const Vector2_Int& vec1, const Vector2_Int& vec2);
 
 void grid_draw(Grid* grid, Reward* reward, Snake* player_snake);
-void update_app_time();
+void app_update_time();
 void game_update();
 void time_init();
 int random_int(int min, int max);
 int teleport_if_on_boarder(int min, int max, int current);
 
 Snake* snake_create();
-void snake_move(Snake* snake);
+void snake_move(Snake* snake, const Rect2D_Int& playable_rect);
 Snake_BodyPart snake_get_head(Snake* snake);
+void snake_extend_body(Snake* snake);
+bool snake_has_intersections(Snake* snake);
 void snake_delete(Snake* snake);
 
 void input_read();
 void game_init();
 
 Grid grid_create(int width, int height);
-int grid_get_min_x();
-int grid_get_max_x();
-int grid_get_max_y();
-int grid_get_min_y();
 void grid_delete(Grid* grid);
 
 void fill_console_character(char character, int x, int y);
 void delete_game_data();
+void game_restart();
 
-Vector2_Int reward_generate_random_position();
+Vector2_Int reward_generate_random_position(const Rect2D_Int& rect, Snake* snake);
+
+
+Vector2_Int Vector2_Int_vector(const Vector2_Int& start_pos, const Vector2_Int& end_pos);
+float Vector2_Int_dot(const Vector2_Int& vec1, const Vector2_Int& vec2);
+
+Vector2_Int Vector2_Int_vector(const Vector2_Int& start_pos, const Vector2_Int& end_pos)
+{
+	Vector2_Int vec;
+	vec.x = end_pos.x - start_pos.x;
+	vec.y = end_pos.y - start_pos.y;
+	return vec;
+}
+
+float Vector2_Int_dot(const Vector2_Int& vec1, const Vector2_Int& vec2)
+{
+	return ((float)vec1.x) * ((float)vec2.x) + ((float)vec1.y) * ((float)vec2.y);
+}
+
 void reward_collect(Reward* reward, Snake* snake);
 
-const char shake_char = '#';//254;
-const char reward_char = 'x';
+const char shake_head_char = '0';//254;
+const char shake_tail_char = 'o';//254;
+const char reward_char = 254;
 const char left_bottom_char = 192;
 const char right_bottom_char = 217;
 const char left_top_char = 218;
@@ -98,24 +110,28 @@ const int W_KEY = 0x57;
 const int S_KEY = 0x53;
 const int D_KEY = 0x44;
 const int A_KEY = 0x41;
+const int R_KEY = 0x52;
+
 const int UP_KEY = VK_UP;
 const int LEFT_KEY = VK_LEFT;
 const int RIGHT_KEY = VK_RIGHT;
 const int DOWN_KEY = VK_DOWN;
 const int ESCAPE_KEY = VK_ESCAPE;
+const int SPACE_KEY = VK_SPACE;
 
-float render_rate_sec = 0.02f;
-float render_t = 0;
+
 float move_snake_t = 0;
-
+float move_tick_time = 0.3f;
 float delta_time = 0;
 float total_time = 0;
 clock_t old_time;
+int score;
+int max_score;
+float speed = 1;
+float speed_increase = 0.1f;
 
 bool exit_app = false;
-
-const int grid_width_size = 25;
-const int grid_height_size = 15;
+bool pause = false;
 
 HANDLE console_handle_in;
 HANDLE console_handle_out;
@@ -127,10 +143,19 @@ Snake* player_snake;
 
 int main()
 {
+	srand(unsigned int(time(NULL)));
+
 	game_init();
 
+	move_snake_t = move_tick_time;
 	while (exit_app == false)
 	{
+		input_read();
+		app_update_time();
+
+		if (pause == true)
+			continue;
+
 		game_update();
 	}
 
@@ -138,44 +163,59 @@ int main()
 	return 0;
 }
 
-int grid_get_min_x()
-{
-	return 1;
-}
-
-int grid_get_max_x()
-{
-	return grid_width_size - 2;
-}
-
-int grid_get_max_y()
-{
-	return grid_height_size - 2;
-}
-
-int grid_get_min_y()
-{
-	return 1;
-}
-
 void game_init()
 {
-	//init random
-	srand(unsigned int(time(NULL)));
-
 	//get console handles
 	console_handle_in = GetStdHandle(STD_INPUT_HANDLE);
 	console_handle_out = GetStdHandle(STD_OUTPUT_HANDLE);
 
+	CONSOLE_FONT_INFOEX cfi = {sizeof(cfi)};
+	
+	if (0 == GetCurrentConsoleFontEx(console_handle_out, true, &cfi))
+	{
+		printf("error: %i", GetLastError());
+	}
+
+	cfi.dwFontSize.X = 10;
+	cfi.dwFontSize.Y = 30;
+	
+	SetCurrentConsoleFontEx(console_handle_out, true, &cfi);
 	player_snake = snake_create();
 
 	time_init();
 
+	int grid_width_size = 20;
+	int grid_height_size = 20;
+
+
 	global_grid = grid_create(grid_width_size, grid_height_size);
-	reward.position = reward_generate_random_position();
+	reward.position = reward_generate_random_position(global_grid.playeable_rect, player_snake);
 }
 
-bool Vector2_equals(Vector2_Int vec1, Vector2_Int vec2)
+void game_restart()
+{
+	delete_game_data();
+	game_init();
+	score = 0;
+	speed = 1;
+}
+
+bool snake_has_intersections(Snake* snake)
+{
+	Snake_BodyPart part = snake_get_head(snake);
+
+	for (int i = 1; i < snake->body_size; i++)
+	{
+		if (Vector2_equals(part.position, snake->snake_body[i].position))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool Vector2_equals(const Vector2_Int& vec1, const Vector2_Int& vec2)
 {
 	return vec1.x == vec2.x && vec1.y == vec2.y;
 }
@@ -187,7 +227,27 @@ Snake_BodyPart snake_get_head(Snake* snake)
 
 void snake_extend_body(Snake* snake)
 {
-	
+	int old_size = snake->body_size;
+	int new_size = old_size + 1;
+
+	Snake_BodyPart* new_parts = new Snake_BodyPart[new_size];
+
+	for (int i = 0; i < old_size; i++)
+	{
+		new_parts[i] = snake->snake_body[i];
+	}
+
+	Snake_BodyPart bodypart;
+
+	bodypart.simbol = shake_tail_char;
+	bodypart.position = snake->tail_last_position;
+
+	new_parts[old_size] = bodypart;
+
+	delete[] snake->snake_body;
+
+	snake->snake_body = new_parts;
+	snake->body_size = new_size;
 }
 
 void reward_collect(Reward* reward, Snake* snake)
@@ -198,16 +258,37 @@ void reward_collect(Reward* reward, Snake* snake)
 
 	if (is_collected)
 	{
-		reward_generate_random_position();
+		snake_extend_body(snake);
+		reward->position = reward_generate_random_position(global_grid.playeable_rect, player_snake);
+		score += 1;
+		speed += speed_increase;
 	}
 }
 
-Vector2_Int reward_generate_random_position()
-{
-	int x = random_int(grid_get_min_x(), grid_get_max_x() + 1);
-	int y = random_int(grid_get_min_y(), grid_get_max_y() + 1);
+Vector2_Int reward_generate_random_position(const Rect2D_Int& rect, Snake* snake)
+{	
+	Vector2_Int result;
 
-	return Vector2_Int{ x, y };
+	while (true)
+	{
+		result.x = random_int(rect.min_x, rect.max_x);
+		result.y = random_int(rect.min_y, rect.max_y);
+		bool is_valid = true;
+
+		for (int i = 0; i < snake->body_size; i++)
+		{
+			if (Vector2_equals(result, snake->snake_body[i].position))
+			{
+				is_valid = false;
+				break;
+			}
+		}
+
+		if (is_valid == true)
+			break;
+	}
+
+	return result;
 }
 
 //Sample
@@ -287,26 +368,31 @@ Grid grid_create(int width, int height)
 }
 
 void game_update()
-{
-	input_read();
-	update_app_time();
+{	
+	move_snake_t += delta_time * speed;
 
-	render_t += delta_time;
-
-	if (render_t > render_rate_sec)
-	{
-		render_t -= render_rate_sec;
-		grid_draw(&global_grid, &reward, player_snake);
-	}
-
-	move_snake_t += delta_time;
-
-	float move_tick_time = 0.2f;
 	if (move_snake_t > move_tick_time)
 	{
-		move_snake_t -= move_tick_time;
+		move_snake_t = 0;
 		reward_collect(&reward, player_snake);
-		snake_move(player_snake);
+		snake_move(player_snake, global_grid.playeable_rect);
+		grid_draw(&global_grid, &reward, player_snake);
+		
+		
+		printf("score: %i max score: %i\n", score, max_score);
+
+		if (snake_has_intersections(player_snake))
+		{
+			pause = true;
+			max_score = score;
+			printf("you are dead!\n");
+		}
+		else
+		{
+			printf("move: W A S D \n");
+		}
+
+		printf("restart: R\n");
 	}
 }
 
@@ -325,7 +411,7 @@ void delete_game_data()
 
 void grid_delete(Grid* grid)
 {
-	for (int i = 0; i < grid_height_size; i++)
+	for (int i = 0; i < grid->height; i++)
 	{
 		delete[] grid->grid[i];
 	}
@@ -338,12 +424,10 @@ void input_read()
 	INPUT_RECORD inp;
 
 	// Read Console Input
-	//ReadConsoleInput(hIn, &inp, 1, &num_of_events);
 	bool hasInput = GetNumberOfConsoleInputEvents(console_handle_in, &num_of_events);
 
 	if (hasInput == false)
 	{
-		//std::cout << GetLastError();
 		return;
 	}
 
@@ -355,27 +439,36 @@ void input_read()
 		switch (inp.Event.KeyEvent.wVirtualKeyCode)
 		{
 		case UP_KEY:
-		case W_KEY:
-			last_player_move_direction = MOVE_TOP;
+		case W_KEY:		
+			move_input = { 0, -1 };		
 			break;
 
 		case LEFT_KEY:
 		case A_KEY:
-			last_player_move_direction = MOVE_LEFT;
+			move_input = { -1, 0 };
 			break;
 
 		case DOWN_KEY:
 		case S_KEY:
-			last_player_move_direction = MOVE_BOTTOM;
+			move_input = { 0, 1 };
 			break;
 
 		case RIGHT_KEY:
 		case D_KEY:
-			last_player_move_direction = MOVE_RIGHT;
+			move_input = { 1, 0 };
 			break;
 
 		case ESCAPE_KEY:
 			exit_app = true;
+			break;
+
+		case SPACE_KEY:
+			pause = !pause;
+			break;
+
+		case R_KEY:
+			pause = false;
+			game_restart();
 			break;
 		}
 
@@ -433,15 +526,15 @@ Snake* snake_create()
 {
 	Snake* snake_obj = new Snake;
 
-	snake_obj->move_direction = Snake_Move_Direction::MOVE_RIGHT;
+	snake_obj->head_move_direction = {1, 0};
 	snake_obj->snake_body = new Snake_BodyPart[1];
 
 	Snake_BodyPart snakePart = Snake_BodyPart();
 
-	snakePart.simbol = shake_char;
-	snakePart.position = Vector2_Int{ 1, 1 };
+	snakePart.simbol = shake_head_char;
+	snakePart.position = Vector2_Int{ 2, 1 };
 	snake_obj->snake_body[0] = snakePart;
-
+	snake_obj->tail_last_position = Vector2_Int{ 1, 1 };
 	snake_obj->body_size = 1;
 
 	return snake_obj;
@@ -461,53 +554,89 @@ int teleport_if_on_boarder(int min, int max, int current)
 	return current;
 }
 
-void snake_move(Snake* snake)
+void snake_move(Snake* snake, const Rect2D_Int& playable_rect)
 {
-	Vector2_Int prevPos = { 0, 0 };
+	Vector2_Int prev_pos = { 0, 0 };
 
-	Snake_BodyPart bodyPart = snake->snake_body[0];
+	Snake_BodyPart head_part = snake->snake_body[0];
 
-	Vector2_Int next_head_pos = bodyPart.position;
+	Vector2_Int next_head_pos = head_part.position;
+	Vector2_Int tail_last_position = head_part.position;
 
-	snake->move_direction = last_player_move_direction;
+	int minX = playable_rect.min_x;
+	int maxX = playable_rect.max_x;
+	int minY = playable_rect.min_y;
+	int maxY = playable_rect.max_y;
 
-	switch (snake->move_direction)
+	//printf("head vec x: %i y: %i \n", snake->head_move_direction.x, snake->head_move_direction.y);
+	//printf("input vec x: %i y: %i \n", move_input.x, move_input.y);
+	if (snake->body_size > 1)
 	{
-	case MOVE_LEFT:
-		next_head_pos.x -= 1;
-		break;
-	case MOVE_RIGHT:
-		next_head_pos.x += 1;
-		break;
-	case MOVE_TOP:
-		next_head_pos.y -= 1;
-		break;
-	case MOVE_BOTTOM:
-		next_head_pos.y += 1;
-		break;
-	default:
-		break;
-	}
+		Snake_BodyPart second_part = snake->snake_body[1];
 
-	int minX = 1;
-	int maxX = grid_width_size - 2;
-	int minY = 1;
-	int maxY = grid_height_size - 2;
+		Vector2_Int tail_pos = second_part.position;
+		Vector2_Int head_pos = head_part.position;
+
+		//Vector2_Int tail_vec = Vector2_Int_vector(tail_pos, head_pos);
+
+		next_head_pos = head_part.position;
+
+		next_head_pos.x += move_input.x;
+		next_head_pos.y += move_input.y;
+
+		next_head_pos.x = teleport_if_on_boarder(minX, maxX, next_head_pos.x);
+		next_head_pos.y = teleport_if_on_boarder(minY, maxY, next_head_pos.y);
+
+		//float dot = Vector2_Int_dot(move_input, tail_vec);
+		
+		//printf("tail vec x: %i y: %i \n", tail_vec.x, tail_vec.y);
+
+		//printf("dot %f \n", dot);
+
+		if (false == Vector2_equals(next_head_pos, tail_pos))
+		{
+			snake->head_move_direction = move_input;
+		}
+	}
+	else
+	{
+		snake->head_move_direction = move_input;
+	}
+	//printf("head new vec x: %i y: %i \n", snake->head_move_direction.x, snake->head_move_direction.y);
+
+	next_head_pos = head_part.position;
+
+	next_head_pos.x += snake->head_move_direction.x;
+	next_head_pos.y += snake->head_move_direction.y;
 
 	next_head_pos.x = teleport_if_on_boarder(minX, maxX, next_head_pos.x);
 	next_head_pos.y = teleport_if_on_boarder(minY, maxY, next_head_pos.y);
+	
 
-	bodyPart.position = next_head_pos;
+	
 
-	snake->snake_body[0] = bodyPart;
+	head_part.position = next_head_pos;
+
+	snake->snake_body[0] = head_part;
+
+	for (int i = 1; i < snake->body_size; i++)
+	{
+		Snake_BodyPart next_part = snake->snake_body[i];
+		auto pos = next_part.position;
+		next_part.position = tail_last_position;
+		tail_last_position = pos;
+		snake->snake_body[i] = next_part;
+	}
+
+	snake->tail_last_position = tail_last_position;
 }
 
-void grid_draw(Grid* grid, Reward* reward, Snake* player_snake)
+void grid_draw(Grid* grid, Reward* reward, Snake* snake)
 {
 	int width = grid->width;
 	int height = grid->height;
 
-	COORD coordScreen = { width, height };
+	COORD coordScreen = { 0, height };
 	// Put the cursor at its home coordinates.
 	SetConsoleCursorPosition(console_handle_out, coordScreen);
 	Vector2_Int reward_pos = reward->position;
@@ -524,9 +653,9 @@ void grid_draw(Grid* grid, Reward* reward, Snake* player_snake)
 
 	grid_array[(int)reward_pos.y][(int)reward_pos.x] = reward_char;
 
-	for (int i = 0; i < player_snake->body_size; i++)
+	for (int i = 0; i < snake->body_size; i++)
 	{
-		Snake_BodyPart bodyPart = player_snake->snake_body[i];
+		Snake_BodyPart bodyPart = snake->snake_body[i];
 
 		grid_array[(int)bodyPart.position.y][(int)bodyPart.position.x] = bodyPart.simbol;
 	}
@@ -546,7 +675,7 @@ void time_init()
 	old_time = clock();
 }
 
-void update_app_time()
+void app_update_time()
 {
 	delta_time = (clock() - old_time) / 1000.0f;
 	total_time += delta_time;
