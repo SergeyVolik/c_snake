@@ -46,7 +46,7 @@
 #include "linmath.h"
 
 #include <stdlib.h>
-
+#include "log.h";
 
 #include <stdio.h>
 
@@ -94,101 +94,113 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 char* read_file(char* path);
 
+void logger_create();
+void logger_free();
 
 int main(void)
 {
+    logger_create();
+
     GLFWwindow* window;
     GLuint vertex_buffer, vertex_shader, fragment_shader, program;
     GLint mvp_location, vpos_location, vcol_location;
 
-    glfwSetErrorCallback(error_callback);
+    log_info("destroy window");
+    system("pause");
+    //char* vert_shader_path = "shaders/vert_shader.vert";
+    //char* framg_shader = "shaders/framg_shader.vert";
 
-    if (!glfwInit())
-        exit(EXIT_FAILURE);
+    //log_info(strcat("read file: ", vert_shader_path));
+    //char* vertex_shader_text = read_file("shaders/vert_shader.vert");
+    //log_info(strcat("read file: ", framg_shader));
+    //char* fragment_shader_text = read_file("shaders/framg_shader.vert");
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    //glfwSetErrorCallback(error_callback);
 
-    window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        exit(EXIT_FAILURE);
-    }
+    //if (!glfwInit())
+    //    exit(EXIT_FAILURE);
 
-    char* vertex_shader_text = read_file("shaders/vert_shader.vert");
-    char* fragment_shader_text = read_file("shaders/framg_shader.vert");
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
+    //window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+    //if (!window)
+    //{
+    //    glfwTerminate();
+    //    exit(EXIT_FAILURE);
+    //}
 
-    glfwSetKeyCallback(window, key_callback);
+    //glfwSetKeyCallback(window, key_callback);
 
-    glfwMakeContextCurrent(window);
-    gladLoadGL(glfwGetProcAddress);
-    glfwSwapInterval(1);
+    //glfwMakeContextCurrent(window);
+    //gladLoadGL(glfwGetProcAddress);
+    //glfwSwapInterval(1);
 
-    // NOTE: OpenGL error checks have been omitted for brevity
+    //// NOTE: OpenGL error checks have been omitted for brevity
 
-    glGenBuffers(1, &vertex_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    //glGenBuffers(1, &vertex_buffer);
+    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    glCompileShader(vertex_shader);
+    //vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    //glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
+    //glCompileShader(vertex_shader);
 
-    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    glCompileShader(fragment_shader);
+    //fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    //glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
+    //glCompileShader(fragment_shader);
 
-    program = glCreateProgram();
-    glAttachShader(program, vertex_shader);
-    glAttachShader(program, fragment_shader);
-    glLinkProgram(program);
+    //program = glCreateProgram();
+    //glAttachShader(program, vertex_shader);
+    //glAttachShader(program, fragment_shader);
+    //glLinkProgram(program);
 
-    mvp_location = glGetUniformLocation(program, "MVP");
-    vpos_location = glGetAttribLocation(program, "vPos");
-    vcol_location = glGetAttribLocation(program, "vCol");
+    //mvp_location = glGetUniformLocation(program, "MVP");
+    //vpos_location = glGetAttribLocation(program, "vPos");
+    //vcol_location = glGetAttribLocation(program, "vCol");
 
-    glEnableVertexAttribArray(vpos_location);
-    glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-        sizeof(vertices[0]), (void*)0);
-    glEnableVertexAttribArray(vcol_location);
-    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-        sizeof(vertices[0]), (void*)(sizeof(float) * 2));
+    //glEnableVertexAttribArray(vpos_location);
+    //glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
+    //    sizeof(vertices[0]), (void*)0);
+    //glEnableVertexAttribArray(vcol_location);
+    //glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
+    //    sizeof(vertices[0]), (void*)(sizeof(float) * 2));
 
-    while (!glfwWindowShouldClose(window))
-    {
-        float ratio;
-        int width, height;
-        mat4x4 m, p, mvp;
+    //while (!glfwWindowShouldClose(window))
+    //{
+    //    float ratio;
+    //    int width, height;
+    //    mat4x4 m, p, mvp;
 
-        glfwGetFramebufferSize(window, &width, &height);
-        ratio = width / (float)height;
+    //    glfwGetFramebufferSize(window, &width, &height);
+    //    ratio = width / (float)height;
 
-        glViewport(0, 0, width, height);
-        glClear(GL_COLOR_BUFFER_BIT);
+    //    glViewport(0, 0, width, height);
+    //    glClear(GL_COLOR_BUFFER_BIT);
 
-        mat4x4_identity(m);
-        mat4x4_rotate_Z(m, m, (float)glfwGetTime());
-        mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-        mat4x4_mul(mvp, p, m);
+    //    mat4x4_identity(m);
+    //    mat4x4_rotate_Z(m, m, (float)glfwGetTime());
+    //    mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+    //    mat4x4_mul(mvp, p, m);
 
-        glUseProgram(program);
-        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+    //    glUseProgram(program);
+    //    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+    //    glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
+    //    glfwSwapBuffers(window);
+    //    glfwPollEvents();
+    //}
 
-    glfwDestroyWindow(window);
+    //log_info("destroy window");
+    //glfwDestroyWindow(window);
 
-    glfwTerminate();
+    //glfwTerminate();
 
-    free(vertex_shader_text);
-    free(fragment_shader_text);
+    //log_info("free vertex file buffers");
+    //free(vertex_shader_text);
+    //free(fragment_shader_text);
 
-  
+    logger_free();
     exit(EXIT_SUCCESS);
 }
 
@@ -224,4 +236,22 @@ char* read_file(char* path)
     fclose(fp);
 
     return buffer;
+}
+
+
+FILE* fptr;
+
+const char* log_file_name = "log.txt";
+const char* file_mode = "w";
+
+void logger_create()
+{
+    FILE* fptr;
+    fptr = fopen(log_file_name, file_mode);
+    log_add_fp(fptr, 0);
+}
+
+void logger_free()
+{
+    fclose(fptr);
 }

@@ -1,0 +1,1 @@
+2024-01-27 21:27:29 INFO  E:\c_snake\src\main.c:108: destroy window

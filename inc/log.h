@@ -8,9 +8,12 @@
 #ifndef LOG_H
 #define LOG_H
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdbool.h>
+
+
 #include <time.h>
 
 #define LOG_VERSION "0.1.0"
