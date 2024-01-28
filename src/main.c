@@ -83,6 +83,7 @@ static const char* fragment_shader_text =
 
 static void error_callback(int error, const char* description)
 {
+    log_info("Error: %s", description);
     fprintf(stderr, "Error: %s\n", description);
 }
 
@@ -100,107 +101,115 @@ void logger_free();
 int main(void)
 {
     logger_create();
+    log_info("logger inited");
 
     GLFWwindow* window;
     GLuint vertex_buffer, vertex_shader, fragment_shader, program;
     GLint mvp_location, vpos_location, vcol_location;
 
-    log_info("destroy window");
-    system("pause");
-    //char* vert_shader_path = "shaders/vert_shader.vert";
-    //char* framg_shader = "shaders/framg_shader.vert";
+    char* vert_shader_path = "./shaders/vert_shader.vert";
+    char* framg_shader = "./shaders/fragm_shader.frag";
 
-    //log_info(strcat("read file: ", vert_shader_path));
-    //char* vertex_shader_text = read_file("shaders/vert_shader.vert");
-    //log_info(strcat("read file: ", framg_shader));
-    //char* fragment_shader_text = read_file("shaders/framg_shader.vert");
+    log_info("read file: %s", vert_shader_path);
+    char* vertex_shader_text = read_file(vert_shader_path);
+    log_info(vertex_shader_text);
 
-    //glfwSetErrorCallback(error_callback);
+    log_info("read file: %s", framg_shader);
+    char* fragment_shader_text = read_file(framg_shader);
+    log_info(fragment_shader_text);
 
-    //if (!glfwInit())
-    //    exit(EXIT_FAILURE);
+    glfwSetErrorCallback(error_callback);
 
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    if (!glfwInit())
+    {
+        log_error("glfwInit failed!");
+        exit(EXIT_FAILURE);
+    }
 
-    //window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
-    //if (!window)
-    //{
-    //    glfwTerminate();
-    //    exit(EXIT_FAILURE);
-    //}
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    //glfwSetKeyCallback(window, key_callback);
+    log_info("glfwCreateWindow");
+    window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+    if (!window)
+    {
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
 
-    //glfwMakeContextCurrent(window);
-    //gladLoadGL(glfwGetProcAddress);
-    //glfwSwapInterval(1);
+    glfwSetKeyCallback(window, key_callback);
 
-    //// NOTE: OpenGL error checks have been omitted for brevity
+    glfwMakeContextCurrent(window);
+    gladLoadGL(glfwGetProcAddress);
+    glfwSwapInterval(1);
 
-    //glGenBuffers(1, &vertex_buffer);
-    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    //glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // NOTE: OpenGL error checks have been omitted for brevity
 
-    //vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    //glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
-    //glCompileShader(vertex_shader);
+    glGenBuffers(1, &vertex_buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    //fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    //glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
-    //glCompileShader(fragment_shader);
+    vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex_shader, 1, &vertex_shader_text, NULL);
+    glCompileShader(vertex_shader);
 
-    //program = glCreateProgram();
-    //glAttachShader(program, vertex_shader);
-    //glAttachShader(program, fragment_shader);
-    //glLinkProgram(program);
+    fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragment_shader, 1, &fragment_shader_text, NULL);
+    glCompileShader(fragment_shader);
 
-    //mvp_location = glGetUniformLocation(program, "MVP");
-    //vpos_location = glGetAttribLocation(program, "vPos");
-    //vcol_location = glGetAttribLocation(program, "vCol");
+    program = glCreateProgram();
+    glAttachShader(program, vertex_shader);
+    glAttachShader(program, fragment_shader);
+    glLinkProgram(program);
 
-    //glEnableVertexAttribArray(vpos_location);
-    //glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
-    //    sizeof(vertices[0]), (void*)0);
-    //glEnableVertexAttribArray(vcol_location);
-    //glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
-    //    sizeof(vertices[0]), (void*)(sizeof(float) * 2));
+    mvp_location = glGetUniformLocation(program, "MVP");
+    vpos_location = glGetAttribLocation(program, "vPos");
+    vcol_location = glGetAttribLocation(program, "vCol");
 
-    //while (!glfwWindowShouldClose(window))
-    //{
-    //    float ratio;
-    //    int width, height;
-    //    mat4x4 m, p, mvp;
+    glEnableVertexAttribArray(vpos_location);
+    glVertexAttribPointer(vpos_location, 2, GL_FLOAT, GL_FALSE,
+        sizeof(vertices[0]), (void*)0);
+    glEnableVertexAttribArray(vcol_location);
+    glVertexAttribPointer(vcol_location, 3, GL_FLOAT, GL_FALSE,
+        sizeof(vertices[0]), (void*)(sizeof(float) * 2));
 
-    //    glfwGetFramebufferSize(window, &width, &height);
-    //    ratio = width / (float)height;
+    while (!glfwWindowShouldClose(window))
+    {
+        float ratio;
+        int width, height;
+        mat4x4 m, p, mvp;
 
-    //    glViewport(0, 0, width, height);
-    //    glClear(GL_COLOR_BUFFER_BIT);
+        glfwGetFramebufferSize(window, &width, &height);
+        ratio = width / (float)height;
 
-    //    mat4x4_identity(m);
-    //    mat4x4_rotate_Z(m, m, (float)glfwGetTime());
-    //    mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-    //    mat4x4_mul(mvp, p, m);
+        glViewport(0, 0, width, height);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-    //    glUseProgram(program);
-    //    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
-    //    glDrawArrays(GL_TRIANGLES, 0, 3);
+        mat4x4_identity(m);
+        mat4x4_rotate_Z(m, m, (float)glfwGetTime());
+        mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+        mat4x4_mul(mvp, p, m);
 
-    //    glfwSwapBuffers(window);
-    //    glfwPollEvents();
-    //}
+        glUseProgram(program);
+        glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
-    //log_info("destroy window");
-    //glfwDestroyWindow(window);
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
 
-    //glfwTerminate();
+    log_info("destroy glfw window");
+    glfwDestroyWindow(window);
 
-    //log_info("free vertex file buffers");
-    //free(vertex_shader_text);
-    //free(fragment_shader_text);
+    glfwTerminate();
+
+    log_info("free vertex file buffers");
+    free(vertex_shader_text);
+    free(fragment_shader_text);
 
     logger_free();
+
+    system("pause");
     exit(EXIT_SUCCESS);
 }
 
@@ -210,9 +219,13 @@ char* read_file(char* path)
     long lSize;
     char* buffer;
 
-
     fp = fopen(path, "rb");
-    if (!fp) perror(path), exit(1);
+    if (!fp)
+    {
+        log_error("file cant be open. file:  %s", path);
+        perror(path);
+        exit(1);
+    }
 
     fseek(fp, 0L, SEEK_END);
     lSize = ftell(fp);
@@ -220,16 +233,23 @@ char* read_file(char* path)
 
     /* allocate memory for entire content */
     buffer = calloc(1, lSize + 1);
+
     if (!buffer)
     {
+        log_error("memory alloc fails. file: %s", path);
         fclose(fp);
         fputs("memory alloc fails", stderr);
-        system("pause");
         exit(1);
     }
     /* copy the file into the buffer */
     if (1 != fread(buffer, lSize, 1, fp))
-        fclose(fp), free(buffer), fputs("entire read fails", stderr), exit(1);
+    {
+        fclose(fp);
+        free(buffer);
+        log_error("entire read fails file: %s", path);
+        fputs("entire read fails", stderr);
+        exit(1);
+    }
 
     /* do your work here, buffer is a string contains the whole text */
 
@@ -245,13 +265,22 @@ const char* log_file_name = "log.txt";
 const char* file_mode = "w";
 
 void logger_create()
-{
-    FILE* fptr;
+{    
     fptr = fopen(log_file_name, file_mode);
+
+    if (fptr == NULL)
+    {
+       
+        return;
+    }
+    log_info("log linked to file: %s", log_file_name);
     log_add_fp(fptr, 0);
 }
 
 void logger_free()
 {
+    if (fptr == NULL)
+        return;
+
     fclose(fptr);
 }
