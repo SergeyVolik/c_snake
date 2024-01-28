@@ -1,6 +1,6 @@
-2024-01-28 17:15:30 INFO  E:\c_snake\src\main.c:104: logger inited
-2024-01-28 17:15:30 INFO  E:\c_snake\src\main.c:113: read file: ./shaders/vert_shader.vert
-2024-01-28 17:15:30 INFO  E:\c_snake\src\main.c:115: #version 110
+2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:88: logger inited
+2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:97: read file: ./shaders/vert_shader.vert
+2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:99: #version 110
 uniform mat4 MVP;
 attribute vec3 vCol;
 attribute vec2 vPos;
@@ -11,8 +11,8 @@ void main()
     gl_Position = MVP * vec4(vPos, 0.0, 1.0);
     color = vCol;
 }
-2024-01-28 17:15:30 INFO  E:\c_snake\src\main.c:117: read file: ./shaders/fragm_shader.frag
-2024-01-28 17:15:30 INFO  E:\c_snake\src\main.c:119: #version 110
+2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:101: read file: ./shaders/fragm_shader.frag
+2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:103: #version 110
 varying vec3 color;
 
 void main()
@@ -20,6 +20,6 @@ void main()
     gl_FragColor = vec4(color, 1.0);
 }
 
-2024-01-28 17:15:30 INFO  E:\c_snake\src\main.c:132: glfwCreateWindow
-2024-01-28 17:15:35 INFO  E:\c_snake\src\main.c:201: destroy glfw window
-2024-01-28 17:15:35 INFO  E:\c_snake\src\main.c:206: free vertex file buffers
+2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:116: glfwCreateWindow
+2024-01-28 18:08:50 INFO  E:\c_snake\src\main.c:190: destroy glfw window
+2024-01-28 18:08:50 INFO  E:\c_snake\src\main.c:195: free vertex file buffers

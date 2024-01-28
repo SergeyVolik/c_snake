@@ -1,15 +1,5 @@
-// Snake.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
+//TODO: updaet snake to window version
 //#include <stdio.h>
 //#include <time.h>
 //#include "header.h"
@@ -50,36 +40,30 @@
 
 #include <stdio.h>
 
-static const struct
+typedef struct Vertex
 {
     float x, y;
     float r, g, b;
-} vertices[3] =
+} Vertex;
+
+Vertex vertices[6] =
 {
-    { -0.6f, -0.4f, 1.f, 0.f, 0.f },
-    {  0.6f, -0.4f, 0.f, 1.f, 0.f },
-    {   0.f,  0.6f, 0.f, 0.f, 1.f }
+    //triang1
+    { -1, -1, 0.f, 0.f, 1.f },
+    { 1, -1.f, 0.f, 0.f, 1.f },
+    { 1, 1, 0.f, 0.f, 1.f },
+    //triang2
+    { -1, -1, 0.f, 1.f, 0.f },
+    { -1, 1.f, 0.f, 1.f, 0.f },
+    { 1, 1, 0.f, 1.f, 0.f },
 };
 
-static const char* vertex_shader_text =
-"#version 110\n"
-"uniform mat4 MVP;\n"
-"attribute vec3 vCol;\n"
-"attribute vec2 vPos;\n"
-"varying vec3 color;\n"
-"void main()\n"
-"{\n"
-"    gl_Position = MVP * vec4(vPos, 0.0, 1.0);\n"
-"    color = vCol;\n"
-"}\n";
-
-static const char* fragment_shader_text =
-"#version 110\n"
-"varying vec3 color;\n"
-"void main()\n"
-"{\n"
-"    gl_FragColor = vec4(color, 1.0);\n"
-"}\n";
+//Vertex vertices[3] =
+//{
+//    { -0.6f, -0.4f, 1.f, 0.f, 0.f },
+//    {  0.6f, -0.4f, 0.f, 1.f, 0.f },
+//    {   0.f,  0.6f, 0.f, 0.f, 1.f }
+//};
 
 static void error_callback(int error, const char* description)
 {
@@ -130,7 +114,8 @@ int main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
     log_info("glfwCreateWindow");
-    window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+    window = glfwCreateWindow(640, 480, "Snake GLFW", NULL, NULL);
+
     if (!window)
     {
         glfwTerminate();
@@ -143,6 +128,7 @@ int main(void)
     gladLoadGL(glfwGetProcAddress);
     glfwSwapInterval(1);
 
+    //glfwLoadTexture2D();
     // NOTE: OpenGL error checks have been omitted for brevity
 
     glGenBuffers(1, &vertex_buffer);
@@ -175,24 +161,27 @@ int main(void)
 
     while (!glfwWindowShouldClose(window))
     {
-        float ratio;
+        float vratio;
+        float hratio;
+
         int width, height;
         mat4x4 m, p, mvp;
 
         glfwGetFramebufferSize(window, &width, &height);
-        ratio = width / (float)height;
 
+        vratio = width / (float)height;
+        hratio = height / (float)width;
         glViewport(0, 0, width, height);
         glClear(GL_COLOR_BUFFER_BIT);
 
         mat4x4_identity(m);
-        mat4x4_rotate_Z(m, m, (float)glfwGetTime());
-        mat4x4_ortho(p, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+        //mat4x4_rotate_Z(m, m, (float)glfwGetTime());
+        mat4x4_ortho(p, -1, 1, -1.f, 1.f, 1.f, -1.f);
         mat4x4_mul(mvp, p, m);
 
         glUseProgram(program);
         glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*)mvp);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
