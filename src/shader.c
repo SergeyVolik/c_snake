@@ -3,6 +3,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "log.h"
 #include "shader.h"
 
@@ -30,6 +32,7 @@ GLuint shader_load_from_file(char* shader_path, GLenum shader_type)
 {
 	char* shader_text = read_file(shader_path);
 	GLuint shader = shader_load_from_text(shader_text, shader_type);
+	log_info("free file text");
 	free(shader_text);
 
 	return shader;
@@ -40,7 +43,7 @@ char* read_file(char* path)
 	FILE* fp;
 	long lSize;
 	char* buffer;
-
+	log_info("read_file");
 	fp = fopen(path, "rb");
 	if (!fp)
 	{
@@ -53,6 +56,7 @@ char* read_file(char* path)
 	lSize = ftell(fp);
 	rewind(fp);
 
+	log_info(" allocate memory for entire content");
 	/* allocate memory for entire content */
 	buffer = calloc(1, lSize + 1);
 
@@ -74,7 +78,8 @@ char* read_file(char* path)
 	}
 
 	/* do your work here, buffer is a string contains the whole text */
-
+	log_info("content: %s", buffer);
+	log_info("close file");
 	fclose(fp);
 
 	return buffer;

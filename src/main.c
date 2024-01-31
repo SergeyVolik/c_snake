@@ -39,7 +39,7 @@
 #include <math.h>
 #include <stdio.h>
 #include "shader.h"
-#include "image.h"
+#include "image.h" 
 
 typedef struct EBOBuffer
 {
@@ -77,7 +77,6 @@ void logger_create();
 void logger_free();
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-
 
 Vertex vertices[4] = {
 	{   { 0.5f,  0.5f }, {1,0,0}},  // top right
@@ -249,7 +248,9 @@ int main(void)
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	// NOTE: OpenGL error checks have been omitted for brevity
 
+	log_info("read vertex_shader");
 	vertex_shader = shader_load_from_file(vert_shader_path, GL_VERTEX_SHADER);
+	log_info("read fragment_shader");
 	fragment_shader = shader_load_from_file(framg_shader_path, GL_FRAGMENT_SHADER);
 
 	log_info("glCreateProgram");

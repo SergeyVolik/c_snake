@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "image.h"
+#include "log.h"
 
 void read_png_file(char* file_path)
 {
