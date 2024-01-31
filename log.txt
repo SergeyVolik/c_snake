@@ -1,9 +1,8 @@
-2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:270: logger inited
-2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:151: is png 1
-2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:125: Error: The GLFW library is not initialized
-2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:125: Error: The GLFW library is not initialized
-2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:294: glfwCreateWindow
-2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:317: glCreateProgram
-2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:325: create_square
-2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:335: create_buffer
-2024-01-31 11:18:21 INFO  E:\c_snake\src\main.c:373: destroy glfw window
+2024-01-31 13:49:01 INFO  E:\c_snake\src\main.c:247: logger inited
+2024-01-31 13:49:01 INFO  E:\c_snake\src\main.c:124: is png 1
+2024-01-31 13:49:01 INFO  E:\c_snake\src\main.c:98: Error: The GLFW library is not initialized
+2024-01-31 13:49:01 INFO  E:\c_snake\src\main.c:98: Error: The GLFW library is not initialized
+2024-01-31 13:49:01 INFO  E:\c_snake\src\main.c:271: glfwCreateWindow
+2024-01-31 13:49:02 INFO  E:\c_snake\src\main.c:294: glCreateProgram
+2024-01-31 13:49:02 INFO  E:\c_snake\src\main.c:310: create_buffer
+2024-01-31 13:49:03 INFO  E:\c_snake\src\main.c:349: destroy glfw window

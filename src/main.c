@@ -34,19 +34,25 @@
 #include <GLFW/glfw3.h>
 
 #include "linmath.h"
-
 #include <stdlib.h>
 #include "log.h";
 #include <math.h>
 #include <stdio.h>
+#include "shader.h"
+#include "image.h"
 
-
-typedef struct BufferAndArray
+typedef struct EBOBuffer
 {
 	GLuint VBO;
 	GLuint VAO;
-	unsigned int EBO;
-} BufferAndArray;
+	GLuint EBO;
+} EBOBuffer;
+
+typedef struct VAOBuffer
+{
+	GLuint VBO;
+	GLuint VAO;
+} VAOBuffer;
 
 typedef struct Vec2
 {
@@ -61,64 +67,28 @@ typedef struct Color
 typedef struct Vertex
 {
 	Vec2 vec;
-	//Color color;
+	Color color;
 } Vertex;
 
 #define M_PI 3.14f
 
-char* read_file(char* path);
 
 void logger_create();
 void logger_free();
 
-GLuint shader_load_from_text(char* shader_text, GLenum shader_type);
-GLuint shader_load_from_file(char* shader_path, GLenum shader_type);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
-//Vec2 posBuff[6] =
-//{
-//	{ -1, -1 },
-//	{1, -1.f},
-//	{1, 1 },
-//	{-1, -1},
-//	{-1, 1.f},
-//	{1, 1},
-//};
-//
-//Color colorBuff[6] =
-//{
-//	{ 0.f, 0.f, 1.f },
-//	{ 0.f, 0.f, 1.f },
-//	{ 0.f, 0.f, 1.f },
-//	{ 0.f, 1.f, 0.f },
-//	{ 0.f, 1.f, 0.f },
-//	{ 0.f, 1.f, 0.f },
-//};
 
-Vertex vertices [4] = {
-	{ 0.5f,  0.5f },  // top right
-	{ 0.5f, -0.5f},  // bottom right
-	{-0.5f, -0.5f},  // bottom left
-	{-0.5f,  0.5f},  // top left 
+Vertex vertices[4] = {
+	{   { 0.5f,  0.5f }, {1,0,0}},  // top right
+	{	{ 0.5f, -0.5f}, {1,0,0}}, // bottom right
+	{	{-0.5f, -0.5f}, {0,0,1}}, // bottom left
+	{	{-0.5f,  0.5f}, {0,1,0}}, // top left 
 };
 unsigned int indices[] = {  // note that we start from 0!
 	0, 1, 3,   // first triangle
 	1, 2, 3    // second triangle
 };
-
-float vertices2[] = {
-		-0.1f, -0.1f, 0.0f, // left  
-		 0.1f, -0.1f, 0.0f, // right 
-		 0.0f,  0.1f, 0.0f  // top   
-};
-//Vertex vertices[3] =
-//{
-//    { -0.6f, -0.4f, 1.f, 0.f, 0.f },
-//    {  0.6f, -0.4f, 0.f, 1.f, 0.f },
-//    {   0.f,  0.6f, 0.f, 0.f, 1.f }
-//};
-
-GLuint vertex2D_VBO;
 
 static void error_callback(int error, const char* description)
 {
@@ -132,45 +102,35 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-void read_png_file(char* file_path)
+VAOBuffer create_array_buffer(int bufferSize, Vertex* vertices)
 {
-	FILE* fp = fopen(file_path, "rb");
+	VAOBuffer data;
 
-	char header[8];
+	GLint VBO;
+	GLuint VAO;
 
-	if (!fp) {
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+	glGenBuffers(1, &VBO);
 
-		log_error("[read_png_file] File %s could not be opened for reading", file_path);
-		fprintf(stderr, "[read_png_file] File %s could not be opened for reading", file_path);
-		return NULL;
-	}
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, bufferSize, vertices, GL_STATIC_DRAW);
 
-	fread(header, 1, 8, fp);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
 
-	int result = png_sig_cmp(header);
-	log_info("is png %i", result);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
 
-	fclose(fp);
+	data.VAO = VAO;
+	data.VBO = VBO;
+
+	return data;
 }
 
-int png_sig_cmp(char* header)
+EBOBuffer create_element_array_buffer(int bufferSize, Vertex* vertices, int* indices, int indices_size)
 {
-	const char png_first_bytes[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
-
-	for (size_t i = 0; i < 8; i++)
-	{
-		if (png_first_bytes[i] != header[i])
-		{
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
-BufferAndArray create_buffer(int bufferSize, Vertex* vertices, int* indices, int indices_size)
-{
-	BufferAndArray data;
+	EBOBuffer data;
 	GLint VBO;
 	GLuint VAO;
 	GLuint EBO;
@@ -186,8 +146,11 @@ BufferAndArray create_buffer(int bufferSize, Vertex* vertices, int* indices, int
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -233,31 +196,6 @@ Vertex* create_circle_vertex(int segments)
 
 	return vertexArray;
 }
-Vertex* create_square()
-{
-	Vertex* vertBuffer = malloc(sizeof(Vertex) * 6);
-	Vertex vert0 = { -1, -1 };
-	Vertex vert1 = { 1, -1.f };
-	Vertex vert2 = { 1,  1 };
-	Vertex vert3 = { -1, -1 };
-	Vertex vert4 = { -1, 1.f };
-	Vertex vert5 = { 1, 1 };
-
-	if (vertBuffer == NULL)
-	{
-		exit(1);
-		return NULL;
-	}
-
-	vertBuffer[0] = vert0;
-	vertBuffer[1] = vert1;
-	vertBuffer[2] = vert2;
-	vertBuffer[3] = vert3;
-	vertBuffer[4] = vert4;
-	vertBuffer[5] = vert5;
-
-	return vertBuffer;
-}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -270,7 +208,7 @@ int main(void)
 	log_info("logger inited");
 
 	GLFWwindow* window;
-	GLuint vertex_shader, fragment_shader, program;
+	GLuint vertex_shader, fragment_shader, shaderProgram;
 
 	const char* vert_shader_path = "./resources/shaders/vert_shader.vert";
 	const char* framg_shader_path = "./resources/shaders/fragm_shader.frag";
@@ -315,22 +253,20 @@ int main(void)
 	fragment_shader = shader_load_from_file(framg_shader_path, GL_FRAGMENT_SHADER);
 
 	log_info("glCreateProgram");
-	program = glCreateProgram();
-	glAttachShader(program, vertex_shader);
-	glAttachShader(program, fragment_shader);
-	glLinkProgram(program);
+	shaderProgram = glCreateProgram();
+	glAttachShader(shaderProgram, vertex_shader);
+	glAttachShader(shaderProgram, fragment_shader);
+	glLinkProgram(shaderProgram);
 
-	
+
 	Vertex* circle_vert = NULL;
-	log_info("create_square");
-	//square_vert = create_square();
-	BufferAndArray vertex_buffer = create_buffer(sizeof(Vertex) * 4, vertices, indices, sizeof(indices));
 
+	EBOBuffer vertex_buffer = create_element_array_buffer(sizeof(Vertex) * 4, vertices, indices, sizeof(indices));
 	int seg = 30;
 	int circle_size = seg * 3;
-	circle_vert = create_circle_vertex(seg);
+	//circle_vert = create_circle_vertex(seg);
 
-	//BufferAndArray vertex_buffer_circle = create_buffer(sizeof(Vertex) * circle_size, circle_vert);
+	//VAOBuffer vertex_buffer_circle = create_array_buffer(sizeof(Vertex) * circle_size, circle_vert);
 
 	log_info("create_buffer");
 
@@ -352,18 +288,19 @@ int main(void)
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		glUseProgram(program);
+		float timeValue = glfwGetTime();
+		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+		int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+		glUseProgram(shaderProgram);
+		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 
 		glBindVertexArray(vertex_buffer.VAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_buffer.EBO);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
-	
-		//glDrawArrays(GL_TRIANGLES, 0, 6);
-
-		/*glBindVertexArray(vertex_buffer_circle.VAO);
-		glDrawArrays(GL_TRIANGLES, 0, circle_size);*/
+	/*	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_circle.VBO);
+		glBindVertexArray(vertex_buffer_circle.VAO);
+		glDrawBuffer(GL_TRIANGLES, 0, 6);*/
 
 
 		glfwSwapBuffers(window);
@@ -374,12 +311,11 @@ int main(void)
 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
-	glDeleteProgram(program);
-	glDeleteVertexArrays(1, &vertex_buffer.VAO);
+	glDeleteProgram(shaderProgram);
+	glDeleteVertexArrays(1, &vertex_buffer.VAO);	
+	glDeleteBuffers(1, &vertex_buffer.VBO);
 	//glDeleteVertexArrays(1, &vertex_buffer_circle.VAO);
 	//glDeleteBuffers(1, &vertex_buffer_circle.VBO);
-	glDeleteBuffers(1, &vertex_buffer.VBO);
-	
 
 	glfwDestroyWindow(window);
 
@@ -389,80 +325,6 @@ int main(void)
 	free(circle_vert);
 	//system("pause");
 	exit(EXIT_SUCCESS);
-}
-
-GLuint shader_load_from_text(char* shader_text, GLenum shader_type)
-{
-	GLuint shader = glCreateShader(shader_type);
-	glShaderSource(shader, 1, &shader_text, NULL);
-	glCompileShader(shader);
-
-	GLuint ok;
-
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
-
-	if (!ok)
-	{
-		GLchar log[2000];
-		glGetShaderInfoLog(shader, 2000, NULL, log);
-		printf("%s\n", log);
-	}
-
-	return shader;
-}
-
-GLuint shader_load_from_file(char* shader_path, GLenum shader_type)
-{
-	char* shader_text = read_file(shader_path);
-	GLuint shader = shader_load_from_text(shader_text, shader_type);
-	free(shader_text);
-
-	return shader;
-}
-
-char* read_file(char* path)
-{
-	FILE* fp;
-	long lSize;
-	char* buffer;
-
-	fp = fopen(path, "rb");
-	if (!fp)
-	{
-		log_error("file cant be open. file:  %s", path);
-		perror(path);
-		exit(1);
-	}
-
-	fseek(fp, 0L, SEEK_END);
-	lSize = ftell(fp);
-	rewind(fp);
-
-	/* allocate memory for entire content */
-	buffer = calloc(1, lSize + 1);
-
-	if (!buffer)
-	{
-		log_error("memory alloc fails. file: %s", path);
-		fclose(fp);
-		fputs("memory alloc fails", stderr);
-		exit(1);
-	}
-	/* copy the file into the buffer */
-	if (1 != fread(buffer, lSize, 1, fp))
-	{
-		fclose(fp);
-		free(buffer);
-		log_error("entire read fails file: %s", path);
-		fputs("entire read fails", stderr);
-		exit(1);
-	}
-
-	/* do your work here, buffer is a string contains the whole text */
-
-	fclose(fp);
-
-	return buffer;
 }
 
 

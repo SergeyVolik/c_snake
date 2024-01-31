@@ -152,8 +152,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\glad.c" />
+    <ClCompile Include="src\image.c" />
     <ClCompile Include="src\log.c" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\shader.c" />
+    <ClCompile Include="src\shader.cpp" />
     <ClCompile Include="src\Snake.c" />
   </ItemGroup>
   <ItemGroup>
@@ -162,8 +165,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\header.h" />
+    <ClInclude Include="inc\image.h" />
     <ClInclude Include="inc\linmath.h" />
     <ClInclude Include="inc\log.h" />
+    <ClInclude Include="inc\shader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
