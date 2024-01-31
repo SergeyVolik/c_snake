@@ -1,25 +1,9 @@
-2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:88: logger inited
-2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:97: read file: ./shaders/vert_shader.vert
-2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:99: #version 110
-uniform mat4 MVP;
-attribute vec3 vCol;
-attribute vec2 vPos;
-varying vec3 color;
-
-void main()
-{
-    gl_Position = MVP * vec4(vPos, 0.0, 1.0);
-    color = vCol;
-}
-2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:101: read file: ./shaders/fragm_shader.frag
-2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:103: #version 110
-varying vec3 color;
-
-void main()
-{
-    gl_FragColor = vec4(color, 1.0);
-}
-
-2024-01-28 18:08:49 INFO  E:\c_snake\src\main.c:116: glfwCreateWindow
-2024-01-28 18:08:50 INFO  E:\c_snake\src\main.c:190: destroy glfw window
-2024-01-28 18:08:50 INFO  E:\c_snake\src\main.c:195: free vertex file buffers
+2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:270: logger inited
+2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:151: is png 1
+2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:125: Error: The GLFW library is not initialized
+2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:125: Error: The GLFW library is not initialized
+2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:294: glfwCreateWindow
+2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:317: glCreateProgram
+2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:325: create_square
+2024-01-31 11:18:17 INFO  E:\c_snake\src\main.c:335: create_buffer
+2024-01-31 11:18:21 INFO  E:\c_snake\src\main.c:373: destroy glfw window
