@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\file_helper.c" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\image.c" />
     <ClCompile Include="src\log.c" />
@@ -163,6 +164,7 @@
     <None Include="shaders\vert_shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\file_helper.h" />
     <ClInclude Include="inc\header.h" />
     <ClInclude Include="inc\image.h" />
     <ClInclude Include="inc\linmath.h" />

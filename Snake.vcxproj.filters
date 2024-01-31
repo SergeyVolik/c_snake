@@ -33,6 +33,9 @@
     <ClCompile Include="src\shader.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\file_helper.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragm_shader.frag" />
@@ -52,6 +55,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="inc\image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\file_helper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
