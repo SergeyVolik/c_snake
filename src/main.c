@@ -41,6 +41,9 @@
 #include "shader.h"
 #include "image.h" 
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 typedef struct EBOBuffer
 {
 	GLuint VBO;
@@ -49,18 +52,17 @@ typedef struct EBOBuffer
 
 } EBOBuffer;
 
-typedef struct VAOBuffer
-{
-	GLuint VBO;
-	GLuint VAO;
-
-} VAOBuffer;
-
 typedef struct Vec2
 {
 	float x, y;
 
 } Vec2;
+
+typedef struct Vec3
+{
+	float x, y, z;
+
+} Vec3;
 
 typedef struct Color
 {
@@ -70,8 +72,9 @@ typedef struct Color
 
 typedef struct Vertex
 {
-	Vec2 vec;
+	Vec3 vec;
 	Color color;
+	Vec2 uv;
 
 } Vertex;
 
@@ -81,7 +84,7 @@ typedef struct MeshData
 	int verticesLen;
 	int* indices;
 	int indicesLen;
-	bool isNoneDisposable;
+	bool avoidFreeMemory;
 
 } MeshData;
 
@@ -96,10 +99,10 @@ void logger_free();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 Vertex vertices[4] = {
-	{   { 0.5f,  0.5f }, {1,0,0}},  // top right
-	{	{ 0.5f, -0.5f}, {1,0,0}}, // bottom right
-	{	{-0.5f, -0.5f}, {0,0,1}}, // bottom left
-	{	{-0.5f,  0.5f}, {0,1,0}}, // top left 
+	{{ 1.0f,  1.0f, 0},  {1,1,1},  { 1.0f, 1.0f  }},  // top right
+	{{ 1.0f, -1.0f, 0},  {1,1,1},  { 1.0f, 0.0f  }}, // bottom right
+	{{-1.0f, -1.0f, 0},  {1,1,1},  { 0.0f, 0.0f  }}, // bottom left
+	{{-1.0f,  1.0f, 0},  {1,1,1},  { 0.0f, 1.0f  }},// top left 
 };
 unsigned int indices[6] = {  // note that we start from 0!
 	0, 1, 3,   // first triangle
@@ -118,32 +121,6 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-VAOBuffer create_array_buffer(int bufferSize, Vertex* vertices)
-{
-	VAOBuffer data;
-
-	GLint VBO;
-	GLuint VAO;
-
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-	glGenBuffers(1, &VBO);
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, bufferSize, vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindVertexArray(0);
-
-	data.VAO = VAO;
-	data.VBO = VBO;
-
-	return data;
-}
-
 EBOBuffer create_element_array_buffer(MeshData mesh)
 {
 	int vertexBufferSize = sizeof(Vertex) * mesh.verticesLen;
@@ -152,6 +129,7 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 	int indices_size = sizeof(int) * mesh.indicesLen;
 
 	EBOBuffer data;
+
 	GLint VBO;
 	GLuint VAO;
 	GLuint EBO;
@@ -167,11 +145,23 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, indices, GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	int posSize = sizeof(float) * 3;
+	int colorSize = sizeof(float) * 3;
+	int uvSize = sizeof(float)*2;
+		
+	int fullsize = sizeof(Vertex);
+
+	//pos
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, fullsize,  (void*)0);
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+	//color
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, fullsize, (void*)(posSize));
 	glEnableVertexAttribArray(1);
+
+	//uv
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, fullsize, (void*)(posSize + colorSize));
+	glEnableVertexAttribArray(2);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -186,7 +176,7 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 
 void mesh_free(MeshData mesh)
 {
-	if (mesh.isNoneDisposable)
+	if (mesh.avoidFreeMemory)
 		return;
 
 	if (mesh.indices != NULL)
@@ -224,16 +214,16 @@ MeshData create_circle_mesh(int segments)
 	}
 
 	Color color = { 1, 1, 0 };
-	Vec2 center = { 0, 0 };
+	Vec3 center = { 0, 0, 0 };
 	Vertex vert = { center, color };
 
 	int offset = 0;
 	for (int i = 0; i < arrayLen - 1; i += 3)
 	{
-		Vec2 currPos = { sin(a * offset) * l, cos(a * offset) * l };
+		Vec3 currPos = { sin(a * offset) * l, cos(a * offset) * l, 0 };
 		Vertex currVert = { currPos, color };
 
-		Vec2 nextPos = { sin(a * (offset + 1)) * l, cos(a * (offset + 1)) * l };
+		Vec3 nextPos = { sin(a * (offset + 1)) * l, cos(a * (offset + 1)) * l, 0 };
 		Vertex nextVert = { nextPos, color };
 
 		vertexArray[i] = vert;
@@ -273,8 +263,11 @@ int main(void)
 	const char* tga_image_path = "./resources/dwsample-tga-640.tga";
 	const char* png_image_path = "./resources/test.png";
 
-	read_png_file(png_image_path);
+	int width, height, nrChannels;
 
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char* data = stbi_load(png_image_path, &width, &height, &nrChannels, 0);
+	
 	glfwSetErrorCallback(error_callback);
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -288,7 +281,7 @@ int main(void)
 	}
 
 	log_info("glfwCreateWindow");
-	window = glfwCreateWindow(640, 480, "Snake GLFW", NULL, NULL);
+	window = glfwCreateWindow(600, 600, "Snake GLFW", NULL, NULL);
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	if (!window)
@@ -318,36 +311,32 @@ int main(void)
 	glAttachShader(shaderProgram, fragment_shader);
 	glLinkProgram(shaderProgram);
 
-
-	MeshData circle_mesh;
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glGenerateMipmap(GL_TEXTURE_2D);
 
 	MeshData quad_mesh;
 
 	quad_mesh.indices = indices;
-	quad_mesh.isNoneDisposable = true;
+	quad_mesh.avoidFreeMemory = true;
 	quad_mesh.indicesLen = 6;
 	quad_mesh.vertices = vertices;
 	quad_mesh.verticesLen = 4;
 
-	EBOBuffer vertex_buffer = create_element_array_buffer(quad_mesh);
+	EBOBuffer quad_buffer = create_element_array_buffer(quad_mesh);
 
+	MeshData circle_mesh;
 	int seg = 30;
 	int circle_size = seg * 3;
 	circle_mesh = create_circle_mesh(seg);
-	EBOBuffer vertex_buffer_circle = create_element_array_buffer(circle_mesh);
+	EBOBuffer circle_buffer = create_element_array_buffer(circle_mesh);
 
 	while (!glfwWindowShouldClose(window))
 	{
-		float vratio;
-		float hratio;
-
 		int width, height;
-		mat4x4 m, p, mvp;
-
 		glfwGetFramebufferSize(window, &width, &height);
-
-		vratio = width / (float)height;
-		hratio = height / (float)width;
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -357,13 +346,14 @@ int main(void)
 		glUseProgram(shaderProgram);
 		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 
-		glBindVertexArray(vertex_buffer.VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_buffer.EBO);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glBindVertexArray(quad_buffer.VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad_buffer.EBO);
 		glDrawElements(GL_TRIANGLES, quad_mesh.indicesLen, GL_UNSIGNED_INT, 0);
 
-		glBindVertexArray(vertex_buffer_circle.VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_buffer_circle.EBO);
-		glDrawElements(GL_TRIANGLES, circle_mesh.indicesLen, GL_UNSIGNED_INT, 0);
+		/*glBindVertexArray(circle_buffer.VAO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, circle_buffer.EBO);
+		glDrawElements(GL_TRIANGLES, circle_mesh.indicesLen, GL_UNSIGNED_INT, 0);*/
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -374,8 +364,11 @@ int main(void)
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 	glDeleteProgram(shaderProgram);
-	glDeleteVertexArrays(1, &vertex_buffer.VAO);
-	glDeleteBuffers(1, &vertex_buffer.VBO);
+	glDeleteVertexArrays(1, &quad_buffer.VAO);
+	glDeleteBuffers(1, &quad_buffer.VBO);
+	glDeleteVertexArrays(1, &circle_buffer.VAO);
+	glDeleteBuffers(1, &circle_buffer.VBO);
+	glDeleteTextures(1, &texture);
 
 	glfwDestroyWindow(window);
 
@@ -383,6 +376,7 @@ int main(void)
 
 	logger_free();
 
+	stbi_image_free(data);
 	mesh_free(circle_mesh);
 	mesh_free(quad_mesh);
 
