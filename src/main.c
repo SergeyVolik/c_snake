@@ -46,29 +46,46 @@ typedef struct EBOBuffer
 	GLuint VBO;
 	GLuint VAO;
 	GLuint EBO;
+
 } EBOBuffer;
 
 typedef struct VAOBuffer
 {
 	GLuint VBO;
 	GLuint VAO;
+
 } VAOBuffer;
 
 typedef struct Vec2
 {
 	float x, y;
+
 } Vec2;
 
 typedef struct Color
 {
 	float r, g, b;
+
 } Color;
 
 typedef struct Vertex
 {
 	Vec2 vec;
 	Color color;
+
 } Vertex;
+
+typedef struct MeshData
+{
+	Vertex* vertices;
+	int verticesLen;
+	int* indices;
+	int indicesLen;
+	bool isNoneDisposable;
+
+} MeshData;
+
+void mesh_free(MeshData mesh);
 
 #define M_PI 3.14f
 
@@ -84,7 +101,7 @@ Vertex vertices[4] = {
 	{	{-0.5f, -0.5f}, {0,0,1}}, // bottom left
 	{	{-0.5f,  0.5f}, {0,1,0}}, // top left 
 };
-unsigned int indices[] = {  // note that we start from 0!
+unsigned int indices[6] = {  // note that we start from 0!
 	0, 1, 3,   // first triangle
 	1, 2, 3    // second triangle
 };
@@ -127,8 +144,13 @@ VAOBuffer create_array_buffer(int bufferSize, Vertex* vertices)
 	return data;
 }
 
-EBOBuffer create_element_array_buffer(int bufferSize, Vertex* vertices, int* indices, int indices_size)
+EBOBuffer create_element_array_buffer(MeshData mesh)
 {
+	int vertexBufferSize = sizeof(Vertex) * mesh.verticesLen;
+	Vertex* vertices = mesh.vertices;
+	int* indices = mesh.indices;
+	int indices_size = sizeof(int) * mesh.indicesLen;
+
 	EBOBuffer data;
 	GLint VBO;
 	GLuint VAO;
@@ -140,7 +162,7 @@ EBOBuffer create_element_array_buffer(int bufferSize, Vertex* vertices, int* ind
 	glGenBuffers(1, &EBO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, bufferSize, vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, vertices, GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, indices, GL_STATIC_DRAW);
@@ -161,39 +183,76 @@ EBOBuffer create_element_array_buffer(int bufferSize, Vertex* vertices, int* ind
 	return data;
 }
 
-Vertex* create_circle_vertex(int segments)
+
+void mesh_free(MeshData mesh)
 {
+	if (mesh.isNoneDisposable)
+		return;
+
+	if (mesh.indices != NULL)
+	{
+		free(mesh.indices);
+	}
+
+	if (mesh.vertices != NULL)
+	{
+		free(mesh.vertices);
+	}
+}
+
+MeshData create_circle_mesh(int segments)
+{
+	MeshData mesh;
 	float l = 0.5f;
 	float a = M_PI * 2 / segments;
-	Vertex* vertexArray = malloc(sizeof(Vertex) * (segments * 3));
+
+	int arrayLen = segments * 3;
+
+	Vertex* vertexArray = malloc(sizeof(Vertex) * arrayLen);
+	int* indices = malloc(sizeof(int) * arrayLen);
 
 	if (vertexArray == NULL)
 	{
 		exit(1);
-		return NULL;
+		return mesh;
 	}
 
+	if (indices == NULL)
+	{
+		exit(1);
+		return mesh;
+	}
+
+	Color color = { 1, 1, 0 };
 	Vec2 center = { 0, 0 };
-	Color color = { 1, 0, 0 };
-	Vertex vert = { center };
+	Vertex vert = { center, color };
 
 	int offset = 0;
-	for (int i = 0; i < segments * 3 - 1; i += 3)
+	for (int i = 0; i < arrayLen - 1; i += 3)
 	{
 		Vec2 currPos = { sin(a * offset) * l, cos(a * offset) * l };
-		Vertex currVert = { currPos };
+		Vertex currVert = { currPos, color };
 
 		Vec2 nextPos = { sin(a * (offset + 1)) * l, cos(a * (offset + 1)) * l };
-		Vertex nextVert = { nextPos };
+		Vertex nextVert = { nextPos, color };
 
 		vertexArray[i] = vert;
 		vertexArray[i + 1] = currVert;
 		vertexArray[i + 2] = nextVert;
 
+		indices[i] = i;
+		indices[i + 1] = i + 1;
+		indices[i + 2] = i + 2;
+
+
 		offset += 1;
 	}
+	mesh.vertices = vertexArray;
+	mesh.verticesLen = arrayLen;
+	mesh.indices = indices;
+	mesh.indicesLen = arrayLen;
 
-	return vertexArray;
+	return mesh;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -260,19 +319,22 @@ int main(void)
 	glLinkProgram(shaderProgram);
 
 
-	Vertex* circle_vert = NULL;
+	MeshData circle_mesh;
 
-	EBOBuffer vertex_buffer = create_element_array_buffer(sizeof(Vertex) * 4, vertices, indices, sizeof(indices));
+	MeshData quad_mesh;
+
+	quad_mesh.indices = indices;
+	quad_mesh.isNoneDisposable = true;
+	quad_mesh.indicesLen = 6;
+	quad_mesh.vertices = vertices;
+	quad_mesh.verticesLen = 4;
+
+	EBOBuffer vertex_buffer = create_element_array_buffer(quad_mesh);
+
 	int seg = 30;
 	int circle_size = seg * 3;
-	//circle_vert = create_circle_vertex(seg);
-
-	//VAOBuffer vertex_buffer_circle = create_array_buffer(sizeof(Vertex) * circle_size, circle_vert);
-
-	log_info("create_buffer");
-
-
-	//vertex_buffer2 = create_buffer(sizeof(vertices2), vertices2);
+	circle_mesh = create_circle_mesh(seg);
+	EBOBuffer vertex_buffer_circle = create_element_array_buffer(circle_mesh);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -297,12 +359,11 @@ int main(void)
 
 		glBindVertexArray(vertex_buffer.VAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_buffer.EBO);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, quad_mesh.indicesLen, GL_UNSIGNED_INT, 0);
 
-	/*	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_circle.VBO);
 		glBindVertexArray(vertex_buffer_circle.VAO);
-		glDrawBuffer(GL_TRIANGLES, 0, 6);*/
-
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_buffer_circle.EBO);
+		glDrawElements(GL_TRIANGLES, circle_mesh.indicesLen, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -313,17 +374,19 @@ int main(void)
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 	glDeleteProgram(shaderProgram);
-	glDeleteVertexArrays(1, &vertex_buffer.VAO);	
+	glDeleteVertexArrays(1, &vertex_buffer.VAO);
 	glDeleteBuffers(1, &vertex_buffer.VBO);
-	//glDeleteVertexArrays(1, &vertex_buffer_circle.VAO);
-	//glDeleteBuffers(1, &vertex_buffer_circle.VBO);
 
 	glfwDestroyWindow(window);
 
 	glfwTerminate();
 
 	logger_free();
-	free(circle_vert);
+
+	mesh_free(circle_mesh);
+	mesh_free(quad_mesh);
+
+
 	//system("pause");
 	exit(EXIT_SUCCESS);
 }

@@ -1,6 +1,6 @@
 #ifndef FILE_HELPER_H
 #define FILE_HELPER_H
 
-char* read_file(char* path);
+char* file_read_all_text(char* path);
 
 #endif

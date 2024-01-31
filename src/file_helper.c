@@ -8,7 +8,7 @@
 #include "file_helper.h"
 #include "log.h"
 
-char* read_file(char* path)
+char* file_read_all_text(char* path)
 {
 	FILE* fp;
 	long lSize;

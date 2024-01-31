@@ -8,5 +8,5 @@ uniform vec4 ourColor;
 
 void main()
 {
-    FragColor = ourColor;
+    FragColor = vertexColor;
 }

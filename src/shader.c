@@ -31,7 +31,7 @@ GLuint shader_load_from_text(char* shader_text, GLenum shader_type)
 
 GLuint shader_load_from_file(char* shader_path, GLenum shader_type)
 {
-	char* shader_text = read_file(shader_path);
+	char* shader_text = file_read_all_text(shader_path);
 	GLuint shader = shader_load_from_text(shader_text, shader_type);
 	log_info("free file text");
 	free(shader_text);
