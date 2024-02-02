@@ -40,37 +40,39 @@
 #include <stdio.h>
 #include "shader.h"
 #include "image.h" 
-
+#include "game_time.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-typedef struct EBOBuffer
-{
-	GLuint VBO;
-	GLuint VAO;
-	GLuint EBO;
-
-} EBOBuffer;
-
-typedef struct Vec2
+typedef struct
 {
 	float x, y;
 
 } Vec2;
 
-typedef struct Vec3
+typedef struct
 {
 	float x, y, z;
 
 } Vec3;
 
-typedef struct Color
+typedef struct
+{
+	Vec3 position;
+	float rotation;
+	float scale;
+
+} Transfrom;
+
+
+
+typedef struct
 {
 	float r, g, b;
 
 } Color;
 
-typedef struct Vertex
+typedef struct
 {
 	Vec3 vec;
 	Color color;
@@ -88,6 +90,34 @@ typedef struct MeshData
 
 } MeshData;
 
+typedef struct
+{
+	GLuint VBO;
+	GLuint VAO;
+	GLuint EBO;
+	MeshData meshData;
+
+} EBOBuffer;
+
+typedef struct
+{
+	EBOBuffer renderBuffer;
+	mat4x4 worldMatrix;
+
+} RenderData;
+
+
+
+Transfrom transform_default();
+
+Transfrom transform_default()
+{
+	Transfrom tran;
+
+	tran.scale = 1.0f;
+
+	return tran;
+}
 void mesh_free(MeshData mesh);
 
 #define M_PI 3.14f
@@ -169,7 +199,7 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 	data.VAO = VAO;
 	data.VBO = VBO;
 	data.EBO = EBO;
-
+	data.meshData = mesh;
 	return data;
 }
 
@@ -272,6 +302,7 @@ int main(void)
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
 	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	if (!glfwInit())
@@ -311,7 +342,7 @@ int main(void)
 	glAttachShader(shaderProgram, fragment_shader);
 	glLinkProgram(shaderProgram);
 
-	unsigned int texture;
+	GLuint texture;
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
@@ -332,19 +363,49 @@ int main(void)
 	int circle_size = seg * 3;
 	circle_mesh = create_circle_mesh(seg);
 	EBOBuffer circle_buffer = create_element_array_buffer(circle_mesh);
+	int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+	unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+
+
+	mat4x4 trans;
+	mat4x4_identity(trans);
+	Transfrom transform = transform_default();
+	Transfrom transform2 = transform_default();
+
+	RenderData quad_render;
+	quad_render.renderBuffer = quad_buffer;
+	RenderData circle_render;
+	circle_render.renderBuffer = circle_buffer;
+
+	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, trans);
 
 	while (!glfwWindowShouldClose(window))
 	{
+		app_update_time();
+
+		AppTime time = app_time_get();
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 		float timeValue = glfwGetTime();
+
 		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-		int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+		
 		glUseProgram(shaderProgram);
 		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, trans);
+
+		mat4x4_identity(trans);
+
+		transform.rotation += time.delta_time;
+
+		log_info("%f glfw: %f", time.total_time, timeValue);
+	
+		mat4x4_translate(trans, 0.2f, 0, 0);
+		mat4x4_rotate_Z(trans, trans, time.total_time);
+		//mat4x4_scale(trans, trans, 0.1f);
 
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glBindVertexArray(quad_buffer.VAO);

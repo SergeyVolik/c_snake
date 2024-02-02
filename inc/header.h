@@ -74,9 +74,6 @@ Vector2_Int move_input;
 
 float move_snake_t;
 float move_tick_time;
-float delta_time;
-float total_time;
-clock_t old_time;
 int score;
 int max_score;
 float speed;
@@ -96,9 +93,8 @@ Snake player_snake;
 int Vector2_equals(const Vector2_Int vec1, const Vector2_Int vec2);
 
 void grid_draw(Grid* grid, Reward* reward, Snake* player_snake);
-void app_update_time();
 void game_update();
-void time_init();
+
 int random_int(int min, int max);
 int teleport_if_on_boarder(int min, int max, int current);
 

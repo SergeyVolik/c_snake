@@ -1,16 +1,14 @@
 #include <Windows.h>
 #include <stdio.h>
-#include <time.h>
 #include "header.h"
 #include <string.h> 
+#include "game_time.h"
 
 Vector2_Int move_input = { .x = 1, .y = 0 };
 
 float move_snake_t = 0;
 float move_tick_time = 0.3f;
-float delta_time = 0;
-float total_time = 0;
-clock_t old_time;
+
 int score;
 int max_score;
 float speed = 1;
@@ -69,8 +67,6 @@ void game_init()
 
 	SetCurrentConsoleFontEx(console_handle_out, true, &cfi);
 	player_snake = snake_create();
-
-	time_init();
 
 	int grid_width_size = 20;
 	int grid_height_size = 20;
@@ -259,7 +255,8 @@ Grid grid_create(int width, int height)
 
 void game_update()
 {
-	move_snake_t += delta_time * speed;
+	
+	move_snake_t += app_time_get().delta_time * speed;
 
 	if (move_snake_t > move_tick_time)
 	{
@@ -555,14 +552,3 @@ void grid_draw(Grid* grid, Reward* reward, Snake* snake)
 	}
 }
 
-void time_init()
-{
-	old_time = clock();
-}
-
-void app_update_time()
-{
-	delta_time = (clock() - old_time) / 1000.0f;
-	total_time += delta_time;
-	old_time = clock();
-}

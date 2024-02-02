@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\file_helper.c" />
+    <ClCompile Include="src\game_time.c" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\image.c" />
     <ClCompile Include="src\log.c" />
@@ -171,6 +172,7 @@
     <ClInclude Include="inc\log.h" />
     <ClInclude Include="inc\shader.h" />
     <ClInclude Include="inc\stb_image.h" />
+    <ClInclude Include="inc\game_time.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
