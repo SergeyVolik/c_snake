@@ -114,8 +114,11 @@ Transfrom transform_default()
 {
 	Transfrom tran;
 
-	tran.scale = 1.0f;
+	Vec3 pos = { 0,0,0 };
+	tran.position = pos;
 
+	tran.scale = 1.0f;
+	tran.rotation = 0;
 	return tran;
 }
 void mesh_free(MeshData mesh);
@@ -177,12 +180,12 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 
 	int posSize = sizeof(float) * 3;
 	int colorSize = sizeof(float) * 3;
-	int uvSize = sizeof(float)*2;
-		
+	int uvSize = sizeof(float) * 2;
+
 	int fullsize = sizeof(Vertex);
 
 	//pos
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, fullsize,  (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, fullsize, (void*)0);
 	glEnableVertexAttribArray(0);
 
 	//color
@@ -297,7 +300,7 @@ int main(void)
 
 	stbi_set_flip_vertically_on_load(true);
 	unsigned char* data = stbi_load(png_image_path, &width, &height, &nrChannels, 0);
-	
+
 	glfwSetErrorCallback(error_callback);
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -364,12 +367,16 @@ int main(void)
 	circle_mesh = create_circle_mesh(seg);
 	EBOBuffer circle_buffer = create_element_array_buffer(circle_mesh);
 	int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-	unsigned int transformLoc = glGetUniformLocation(shaderProgram, "transform");
+
+	GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
+	GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
+	GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
 
-	mat4x4 trans;
-	mat4x4_identity(trans);
 	Transfrom transform = transform_default();
+
+	transform.position.x = 0.2f;
+
 	Transfrom transform2 = transform_default();
 
 	RenderData quad_render;
@@ -377,35 +384,40 @@ int main(void)
 	RenderData circle_render;
 	circle_render.renderBuffer = circle_buffer;
 
-	glUniformMatrix4fv(transformLoc, 1, GL_FALSE, trans);
-
 	while (!glfwWindowShouldClose(window))
 	{
+		float ratio;
 		app_update_time();
-
+		mat4x4 modelMat, viewMat, projMat;
 		AppTime time = app_time_get();
+
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
+		ratio = width / (float)height;
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		float timeValue = glfwGetTime();
+		float greenValue = (sin(time.total_time) / 2.0f) + 0.5f;
 
-		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
-		
+		//mat4x4_ortho(projMat, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+		mat4x4_perspective(projMat, 45.0f, ratio, 0.1f, 100.0f);
+
+		mat4x4_identity(viewMat);
+		mat4x4_translate(viewMat, 0, 0, -10);
+
+		mat4x4_identity(modelMat);
+
+		mat4x4_identity(modelMat);
+		mat4x4_rotate_Z(modelMat, modelMat, (float)glfwGetTime());
+
+		mat4x4_scale(modelMat, modelMat, 0.5f);
+
 		glUseProgram(shaderProgram);
 		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
-		glUniformMatrix4fv(transformLoc, 1, GL_FALSE, trans);
 
-		mat4x4_identity(trans);
-
-		transform.rotation += time.delta_time;
-
-		log_info("%f glfw: %f", time.total_time, timeValue);
-	
-		mat4x4_translate(trans, 0.2f, 0, 0);
-		mat4x4_rotate_Z(trans, trans, time.total_time);
-		//mat4x4_scale(trans, trans, 0.1f);
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)projMat);		
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)viewMat);
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (const GLfloat*)modelMat);
 
 		glBindTexture(GL_TEXTURE_2D, texture);
 		glBindVertexArray(quad_buffer.VAO);

@@ -1,11 +1,11 @@
-2024-02-02 06:19:57 INFO  E:\c_snake\src\main.c:286: logger inited
-2024-02-02 06:19:57 INFO  E:\c_snake\src\main.c:144: Error: The GLFW library is not initialized
-2024-02-02 06:19:57 INFO  E:\c_snake\src\main.c:144: Error: The GLFW library is not initialized
-2024-02-02 06:19:57 INFO  E:\c_snake\src\main.c:314: glfwCreateWindow
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:334: read vertex_shader
-2024-02-02 06:19:58 INFO  E:\c_snake\src\file_helper.c:16: read_file
-2024-02-02 06:19:58 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-02 06:19:58 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
+2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:289: logger inited
+2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:147: Error: The GLFW library is not initialized
+2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:147: Error: The GLFW library is not initialized
+2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:317: glfwCreateWindow
+2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:337: read vertex_shader
+2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:16: read_file
+2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
 
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aColor;
@@ -14,20 +14,23 @@ layout (location = 2) in vec2 aTexCoord;
 out vec4 vertexColor; // specify a color output to the fragment shader
 out vec2 TexCoord;
 
-uniform mat4 transform;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
 void main()
 {
-    gl_Position = transform * vec4(aPos, 1.0);
+    gl_Position = projection * view * model * vec4(aPos, 1.0);
 
     vertexColor = vec4(aColor, 1.0); // set the output variable to a dark-red color
     TexCoord = aTexCoord;
 }
-2024-02-02 06:19:58 INFO  E:\c_snake\src\file_helper.c:52: close file
-2024-02-02 06:19:58 INFO  E:\c_snake\src\shader.c:36: free file text
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:336: read fragment_shader
-2024-02-02 06:19:58 INFO  E:\c_snake\src\file_helper.c:16: read_file
-2024-02-02 06:19:58 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-02 06:19:58 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
+2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:52: close file
+2024-02-02 07:07:10 INFO  E:\c_snake\src\shader.c:36: free file text
+2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:339: read fragment_shader
+2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:16: read_file
+2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
 
 out vec4 FragColor;
 
@@ -41,104 +44,7 @@ void main()
 {
     FragColor = texture(ourTexture, TexCoord) *  vertexColor;
 }
-2024-02-02 06:19:58 INFO  E:\c_snake\src\file_helper.c:52: close file
-2024-02-02 06:19:58 INFO  E:\c_snake\src\shader.c:36: free file text
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:339: glCreateProgram
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.290000 glfw: 0.206553
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.304000 glfw: 0.220530
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.321000 glfw: 0.236938
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.336000 glfw: 0.252197
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.353000 glfw: 0.269391
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.369000 glfw: 0.285455
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.386000 glfw: 0.302466
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.403000 glfw: 0.318870
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.420000 glfw: 0.335943
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.436000 glfw: 0.352370
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.453000 glfw: 0.369045
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.469000 glfw: 0.385372
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.485000 glfw: 0.401604
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.502000 glfw: 0.417802
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.519000 glfw: 0.435125
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.535000 glfw: 0.451156
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.552000 glfw: 0.468338
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.568000 glfw: 0.484616
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.586000 glfw: 0.501811
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.601000 glfw: 0.517639
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.619000 glfw: 0.534918
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.635000 glfw: 0.550807
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.652000 glfw: 0.568335
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.668000 glfw: 0.584209
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.685000 glfw: 0.601645
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.701000 glfw: 0.617559
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.719000 glfw: 0.634999
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.736000 glfw: 0.652776
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.752000 glfw: 0.668417
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.768000 glfw: 0.684516
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.785000 glfw: 0.701692
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.802000 glfw: 0.718384
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.818000 glfw: 0.734495
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.836000 glfw: 0.752054
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.852000 glfw: 0.768405
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.868000 glfw: 0.784647
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.886000 glfw: 0.802028
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.902000 glfw: 0.817898
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.919000 glfw: 0.835332
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.935000 glfw: 0.851269
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.952000 glfw: 0.868734
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.968000 glfw: 0.884633
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 0.986000 glfw: 0.902630
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.002000 glfw: 0.918568
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.019000 glfw: 0.935264
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.035000 glfw: 0.951483
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.052000 glfw: 0.968554
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.069000 glfw: 0.985072
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.085000 glfw: 1.001390
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.102000 glfw: 1.018706
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.118000 glfw: 1.034613
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.136000 glfw: 1.052536
-2024-02-02 06:19:58 INFO  E:\c_snake\src\main.c:404: 1.152000 glfw: 1.068627
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.168000 glfw: 1.084631
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.186000 glfw: 1.102520
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.202000 glfw: 1.117916
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.219000 glfw: 1.135524
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.235000 glfw: 1.151260
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.252000 glfw: 1.168733
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.269000 glfw: 1.185119
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.285000 glfw: 1.201237
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.303000 glfw: 1.218911
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.319000 glfw: 1.235431
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.336000 glfw: 1.251850
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.353000 glfw: 1.269776
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.370000 glfw: 1.286607
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.386000 glfw: 1.302339
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.403000 glfw: 1.318900
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.420000 glfw: 1.336622
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.436000 glfw: 1.352388
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.452000 glfw: 1.368277
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.468000 glfw: 1.384725
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.485000 glfw: 1.401368
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.502000 glfw: 1.418165
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.518000 glfw: 1.434656
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.535000 glfw: 1.451293
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.552000 glfw: 1.467872
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.569000 glfw: 1.484854
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.585999 glfw: 1.501806
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.602000 glfw: 1.517896
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.618000 glfw: 1.534659
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.634000 glfw: 1.550757
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.651000 glfw: 1.567776
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.668000 glfw: 1.584701
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.684999 glfw: 1.601220
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.700999 glfw: 1.617759
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.717999 glfw: 1.634560
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.734999 glfw: 1.651209
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.751999 glfw: 1.667802
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.767999 glfw: 1.684403
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.784999 glfw: 1.701056
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.800999 glfw: 1.717646
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.817999 glfw: 1.734102
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.833999 glfw: 1.750764
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.850999 glfw: 1.767334
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.867999 glfw: 1.784121
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:404: 1.883999 glfw: 1.800749
-2024-02-02 06:19:59 INFO  E:\c_snake\src\main.c:423: destroy glfw window
+2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:52: close file
+2024-02-02 07:07:10 INFO  E:\c_snake\src\shader.c:36: free file text
+2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:342: glCreateProgram
+2024-02-02 07:07:17 INFO  E:\c_snake\src\main.c:435: destroy glfw window
