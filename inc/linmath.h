@@ -156,8 +156,10 @@ LINMATH_H_FUNC void mat4x4_sub(mat4x4 M, mat4x4 const a, mat4x4 const b)
 LINMATH_H_FUNC void mat4x4_scale(mat4x4 M, mat4x4 const a, float k)
 {
 	int i;
-	for (i = 0; i < 4; ++i)
+	for (i = 0; i < 3; ++i)
 		vec4_scale(M[i], a[i], k);
+
+	vec4_dup(M[3], a[3]);
 }
 LINMATH_H_FUNC void mat4x4_scale_aniso(mat4x4 M, mat4x4 const a, float x, float y, float z)
 {
@@ -193,6 +195,14 @@ LINMATH_H_FUNC void mat4x4_translate(mat4x4 T, float x, float y, float z)
 	T[3][1] = y;
 	T[3][2] = z;
 }
+LINMATH_H_FUNC void mat4x4_translate_vec3(mat4x4 T, float coord[3])
+{
+	mat4x4_identity(T);
+	T[3][0] = coord[0];
+	T[3][1] = coord[1];
+	T[3][2] = coord[2];
+}
+
 LINMATH_H_FUNC void mat4x4_translate_in_place(mat4x4 M, float x, float y, float z)
 {
 	vec4 t = { x, y, z, 0 };

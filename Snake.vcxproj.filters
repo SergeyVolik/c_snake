@@ -39,6 +39,9 @@
     <ClCompile Include="src\game_time.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\game_math.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\fragm_shader.frag" />
@@ -67,6 +70,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="inc\game_time.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\game_math.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

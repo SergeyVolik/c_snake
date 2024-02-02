@@ -152,6 +152,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\file_helper.c" />
+    <ClCompile Include="src\game_math.c" />
     <ClCompile Include="src\game_time.c" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\image.c" />
@@ -166,6 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\file_helper.h" />
+    <ClInclude Include="inc\game_math.h" />
     <ClInclude Include="inc\header.h" />
     <ClInclude Include="inc\image.h" />
     <ClInclude Include="inc\linmath.h" />

@@ -43,6 +43,8 @@
 #include "game_time.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "game_math.h";
+#include <string.h>
 
 typedef struct
 {
@@ -64,11 +66,9 @@ typedef struct
 
 } Transfrom;
 
-
-
 typedef struct
 {
-	float r, g, b;
+	float r, g, b, a;
 
 } Color;
 
@@ -83,9 +83,9 @@ typedef struct
 typedef struct MeshData
 {
 	Vertex* vertices;
-	int verticesLen;
+	unsigned int verticesLen;
 	int* indices;
-	int indicesLen;
+	unsigned int indicesLen;
 	bool avoidFreeMemory;
 
 } MeshData;
@@ -106,9 +106,43 @@ typedef struct
 
 } RenderData;
 
+#define M_PI 3.14f
 
+void printf_color(Color* color);
+void printf_mat4x4(mat4x4 mat);
+
+void printf_mat4x4(mat4x4 mat)
+{
+	printf("matrix:\n");
+	for (size_t i = 0; i < 4; i++)
+	{
+		printf("[ ");
+		for (size_t j = 0; j < 4; j++)
+		{
+			printf("%f ", mat[i][j]);
+
+			if (j != 3)
+			{
+				printf(",");
+			}
+		}
+		printf("]\n");
+	}
+	
+}
 
 Transfrom transform_default();
+void mesh_free(MeshData mesh);
+void logger_create();
+void logger_free();
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+static void glfw_error_callback(int error, const char* description);
+static void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+void printf_color(Color* color)
+{
+	printf("Color(%f, %f, %f, %f)\n", color->r, color->g, color->b, color->a);
+}
 
 Transfrom transform_default()
 {
@@ -121,34 +155,25 @@ Transfrom transform_default()
 	tran.rotation = 0;
 	return tran;
 }
-void mesh_free(MeshData mesh);
-
-#define M_PI 3.14f
-
-
-void logger_create();
-void logger_free();
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 Vertex vertices[4] = {
-	{{ 1.0f,  1.0f, 0},  {1,1,1},  { 1.0f, 1.0f  }},  // top right
-	{{ 1.0f, -1.0f, 0},  {1,1,1},  { 1.0f, 0.0f  }}, // bottom right
-	{{-1.0f, -1.0f, 0},  {1,1,1},  { 0.0f, 0.0f  }}, // bottom left
-	{{-1.0f,  1.0f, 0},  {1,1,1},  { 0.0f, 1.0f  }},// top left 
+	{{ 1.0f,  1.0f, 0},  {1,1,1,1},  { 1.0f, 1.0f  }},  // top right
+	{{ 1.0f, -1.0f, 0},  {1,1,1,1},  { 1.0f, 0.0f  }}, // bottom right
+	{{-1.0f, -1.0f, 0},  {1,1,1,1},  { 0.0f, 0.0f  }}, // bottom left
+	{{-1.0f,  1.0f, 0},  {1,1,1,1},  { 0.0f, 1.0f  }},// top left 
 };
 unsigned int indices[6] = {  // note that we start from 0!
 	0, 1, 3,   // first triangle
 	1, 2, 3    // second triangle
 };
 
-static void error_callback(int error, const char* description)
+static void glfw_error_callback(int error, const char* description)
 {
 	log_info("Error: %s", description);
 	fprintf(stderr, "Error: %s\n", description);
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -179,7 +204,7 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, indices, GL_STATIC_DRAW);
 
 	int posSize = sizeof(float) * 3;
-	int colorSize = sizeof(float) * 3;
+	int colorSize = sizeof(float) * 4;
 	int uvSize = sizeof(float) * 2;
 
 	int fullsize = sizeof(Vertex);
@@ -189,7 +214,7 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 	glEnableVertexAttribArray(0);
 
 	//color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, fullsize, (void*)(posSize));
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, fullsize, (void*)(posSize));
 	glEnableVertexAttribArray(1);
 
 	//uv
@@ -231,7 +256,7 @@ MeshData create_circle_mesh(int segments)
 
 	int arrayLen = segments * 3;
 
-	Vertex* vertexArray = malloc(sizeof(Vertex) * arrayLen);
+	Vertex* vertexArray = (Vertex*)malloc(sizeof(Vertex) * arrayLen);
 	int* indices = malloc(sizeof(int) * arrayLen);
 
 	if (vertexArray == NULL)
@@ -246,7 +271,7 @@ MeshData create_circle_mesh(int segments)
 		return mesh;
 	}
 
-	Color color = { 1, 1, 0 };
+	Color color = { 1, 1, 1, 1 };
 	Vec3 center = { 0, 0, 0 };
 	Vertex vert = { center, color };
 
@@ -283,6 +308,29 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
+Color* create_texture(int width, int height, Color color);
+
+Color* create_texture(int width, int height, Color color)
+{
+	Color* textureColorData = (Color*)malloc(sizeof(Color) * width * height);
+
+	if (textureColorData == NULL)
+		return NULL;
+
+	for (size_t i = 0; i < height; i++)
+	{
+		for (size_t j = 0; j < width; j++)
+		{
+			size_t index = i * height + j;
+
+			textureColorData[index] = color;
+		}
+	}
+
+	return textureColorData;
+}
+
+int targetFPS = 144;
 int main(void)
 {
 	logger_create();
@@ -299,9 +347,17 @@ int main(void)
 	int width, height, nrChannels;
 
 	stbi_set_flip_vertically_on_load(true);
-	unsigned char* data = stbi_load(png_image_path, &width, &height, &nrChannels, 0);
+	unsigned char* image_data = stbi_load(png_image_path, &width, &height, &nrChannels, STBI_rgb_alpha);
 
-	glfwSetErrorCallback(error_callback);
+	
+	int defTextWidth = 10;
+	int defTextHeigh = 10;
+
+	Color defaultColor = { 1,1,1,1 };
+
+	Color* defaultTextureData = create_texture(defTextWidth, defTextHeigh, defaultColor);
+
+	glfwSetErrorCallback(glfw_error_callback);
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -314,8 +370,10 @@ int main(void)
 		exit(EXIT_FAILURE);
 	}
 
+	char app_name[] = "Snake GLFW ( %i )";
+
 	log_info("glfwCreateWindow");
-	window = glfwCreateWindow(600, 600, "Snake GLFW", NULL, NULL);
+	window = glfwCreateWindow(600, 600, app_name, NULL, NULL);
 
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	if (!window)
@@ -324,14 +382,21 @@ int main(void)
 		exit(EXIT_FAILURE);
 	}
 
-	glfwSetKeyCallback(window, key_callback);
+	
+	glfwSetKeyCallback(window, glfw_key_callback);
 
 	glfwMakeContextCurrent(window);
 	gladLoadGL(glfwGetProcAddress);
-	glfwSwapInterval(1);
+	glfwSwapInterval(0);
 
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);	
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	// NOTE: OpenGL error checks have been omitted for brevity
 
 	log_info("read vertex_shader");
@@ -345,10 +410,16 @@ int main(void)
 	glAttachShader(shaderProgram, fragment_shader);
 	glLinkProgram(shaderProgram);
 
-	GLuint texture;
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	GLuint png_g_texture;
+	glGenTextures(1, &png_g_texture);
+	glBindTexture(GL_TEXTURE_2D, png_g_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	GLuint g_texture;
+	glGenTextures(1, &g_texture);
+	glBindTexture(GL_TEXTURE_2D, g_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, defTextWidth, defTextHeigh, 0, GL_RGBA, GL_FLOAT, defaultTextureData);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	MeshData quad_mesh;
@@ -366,67 +437,94 @@ int main(void)
 	int circle_size = seg * 3;
 	circle_mesh = create_circle_mesh(seg);
 	EBOBuffer circle_buffer = create_element_array_buffer(circle_mesh);
-	int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
 
 	GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
 	GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
 	GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
-
 	Transfrom transform = transform_default();
 
 	transform.position.x = 0.2f;
 
-	Transfrom transform2 = transform_default();
+	Transfrom transformCircle = transform_default();
 
 	RenderData quad_render;
 	quad_render.renderBuffer = quad_buffer;
 	RenderData circle_render;
 	circle_render.renderBuffer = circle_buffer;
 
+	char result[100] = "";
+	sprintf(result, app_name, 0);
 	while (!glfwWindowShouldClose(window))
 	{
-		float ratio;
+		float ratioWidth;
+		float ratioHeight;
+
 		app_update_time();
-		mat4x4 modelMat, viewMat, projMat;
 		AppTime time = app_time_get();
+
+		app_update_fps(time.delta_time);
+
+		mat4x4 modelMat, viewMat, projMat;
+	
 
 		int width, height;
 		glfwGetFramebufferSize(window, &width, &height);
-		ratio = width / (float)height;
+		ratioWidth = width / (float)height;
+		ratioHeight = height / (float)width;
 
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		sprintf(result, app_name, app_fps());
+
+		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-		float greenValue = (sin(time.total_time) / 2.0f) + 0.5f;
 
-		//mat4x4_ortho(projMat, -ratio, ratio, -1.f, 1.f, 1.f, -1.f);
-		mat4x4_perspective(projMat, 45.0f, ratio, 0.1f, 100.0f);
+		
+		glfwSetWindowTitle(window, result);
+		float otrhoFacotr = 2.0f;
+
+		float left = -1.0f * otrhoFacotr;
+		float right = 1.0f * otrhoFacotr;
+		float bottom = -1.0f * otrhoFacotr;
+		float top = 1.0f * otrhoFacotr;
+
+		mat4x4_ortho(projMat, left, right, bottom, top, -0.01f, 100.0f);
+
+		float scale = 1.0f;
 
 		mat4x4_identity(viewMat);
-		mat4x4_translate(viewMat, 0, 0, -10);
+		mat4x4_translate(viewMat, 0, 0, 0);
 
-		mat4x4_identity(modelMat);
-
-		mat4x4_identity(modelMat);
-		mat4x4_rotate_Z(modelMat, modelMat, (float)glfwGetTime());
-
-		mat4x4_scale(modelMat, modelMat, 0.5f);
+		mat4x4_translate_vec3(modelMat, &transformCircle.position);
+		mat4x4_scale(modelMat, modelMat, scale + (1 * time.total_time));
+		mat4x4_rotate_Z(modelMat, modelMat, angle_to_radians(180));
 
 		glUseProgram(shaderProgram);
-		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)projMat);		
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)viewMat);
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (const GLfloat*)modelMat);
 
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glBindTexture(GL_TEXTURE_2D, png_g_texture);
 		glBindVertexArray(quad_buffer.VAO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad_buffer.EBO);
 		glDrawElements(GL_TRIANGLES, quad_mesh.indicesLen, GL_UNSIGNED_INT, 0);
 
-		/*glBindVertexArray(circle_buffer.VAO);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, circle_buffer.EBO);
-		glDrawElements(GL_TRIANGLES, circle_mesh.indicesLen, GL_UNSIGNED_INT, 0);*/
+		//mat4x4_translate_vec3(modelMat, &transformCircle.position);
+		//mat4x4_scale(modelMat, modelMat, scale);
+		//mat4x4_rotate_Z(modelMat, modelMat, angle_to_radians(45));
+		//printf_mat4x4(modelMat);
+
+
+		//glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)projMat);
+		//glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)viewMat);
+		//glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (const GLfloat*)modelMat);
+
+		//glBindTexture(GL_TEXTURE_2D, png_g_texture);
+
+		//glBindTexture(GL_TEXTURE_2D, g_texture);
+		//glBindVertexArray(circle_buffer.VAO);
+		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, circle_buffer.EBO);
+		//glDrawElements(GL_TRIANGLES, circle_mesh.indicesLen, GL_UNSIGNED_INT, 0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -441,7 +539,7 @@ int main(void)
 	glDeleteBuffers(1, &quad_buffer.VBO);
 	glDeleteVertexArrays(1, &circle_buffer.VAO);
 	glDeleteBuffers(1, &circle_buffer.VBO);
-	glDeleteTextures(1, &texture);
+	glDeleteTextures(1, &png_g_texture);
 
 	glfwDestroyWindow(window);
 
@@ -449,7 +547,8 @@ int main(void)
 
 	logger_free();
 
-	stbi_image_free(data);
+	free(defaultTextureData);
+	stbi_image_free(image_data);
 	mesh_free(circle_mesh);
 	mesh_free(quad_mesh);
 

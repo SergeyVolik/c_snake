@@ -1,17 +1,17 @@
-2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:289: logger inited
-2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:147: Error: The GLFW library is not initialized
-2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:147: Error: The GLFW library is not initialized
-2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:317: glfwCreateWindow
-2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:337: read vertex_shader
-2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:16: read_file
-2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
+2024-02-02 12:16:26 INFO  E:\c_snake\src\main.c:337: logger inited
+2024-02-02 12:16:26 INFO  E:\c_snake\src\main.c:172: Error: The GLFW library is not initialized
+2024-02-02 12:16:26 INFO  E:\c_snake\src\main.c:172: Error: The GLFW library is not initialized
+2024-02-02 12:16:26 INFO  E:\c_snake\src\main.c:375: glfwCreateWindow
+2024-02-02 12:16:27 INFO  E:\c_snake\src\main.c:402: read vertex_shader
+2024-02-02 12:16:27 INFO  E:\c_snake\src\file_helper.c:16: read_file
+2024-02-02 12:16:27 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-02 12:16:27 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
 
 layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 aColor;
+layout (location = 1) in vec4 aColor;
 layout (location = 2) in vec2 aTexCoord;
 
-out vec4 vertexColor; // specify a color output to the fragment shader
+out vec4 vertexColor;
 out vec2 TexCoord;
 
 uniform mat4 model;
@@ -20,31 +20,30 @@ uniform mat4 projection;
 
 void main()
 {
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    gl_Position = projection * view * model * vec4(aPos, 1.0f);
 
-    vertexColor = vec4(aColor, 1.0); // set the output variable to a dark-red color
+    vertexColor = aColor;
     TexCoord = aTexCoord;
 }
-2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:52: close file
-2024-02-02 07:07:10 INFO  E:\c_snake\src\shader.c:36: free file text
-2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:339: read fragment_shader
-2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:16: read_file
-2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
+2024-02-02 12:16:27 INFO  E:\c_snake\src\file_helper.c:52: close file
+2024-02-02 12:16:27 INFO  E:\c_snake\src\shader.c:36: free file text
+2024-02-02 12:16:27 INFO  E:\c_snake\src\main.c:404: read fragment_shader
+2024-02-02 12:16:27 INFO  E:\c_snake\src\file_helper.c:16: read_file
+2024-02-02 12:16:27 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-02 12:16:27 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
 
 out vec4 FragColor;
 
-in vec4 vertexColor; // the input variable from the vertex shader (same name and same type)  
+in vec4 vertexColor;
 in vec2 TexCoord;
 
-uniform vec4 ourColor;
 uniform sampler2D ourTexture;
 
 void main()
 {
-    FragColor = texture(ourTexture, TexCoord) *  vertexColor;
+    FragColor = texture(ourTexture, TexCoord) * vertexColor;
 }
-2024-02-02 07:07:10 INFO  E:\c_snake\src\file_helper.c:52: close file
-2024-02-02 07:07:10 INFO  E:\c_snake\src\shader.c:36: free file text
-2024-02-02 07:07:10 INFO  E:\c_snake\src\main.c:342: glCreateProgram
-2024-02-02 07:07:17 INFO  E:\c_snake\src\main.c:435: destroy glfw window
+2024-02-02 12:16:27 INFO  E:\c_snake\src\file_helper.c:52: close file
+2024-02-02 12:16:27 INFO  E:\c_snake\src\shader.c:36: free file text
+2024-02-02 12:16:27 INFO  E:\c_snake\src\main.c:407: glCreateProgram
+2024-02-02 12:16:30 INFO  E:\c_snake\src\main.c:533: destroy glfw window
