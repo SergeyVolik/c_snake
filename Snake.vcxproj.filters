@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Snake.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -60,9 +57,6 @@
     <None Include="shaders\vert_shader.vert" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="inc\header.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="inc\linmath.h">
       <Filter>Header Files</Filter>
     </ClInclude>

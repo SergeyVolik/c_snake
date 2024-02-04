@@ -3,6 +3,14 @@
 
 #include "linmath.h"
 
+typedef struct Rect
+{
+	float min_x;
+	float max_x;
+	float max_y;
+	float min_y;
+} Rect;
+
 #define PI 3.14f
 #define RAD PI / 180
 

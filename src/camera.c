@@ -17,7 +17,7 @@ ecs_entity_t camera_create(ecs_world_t* world, CameraSetting setting)
 	ecs_add_id(world, camera_entity, Camera_Tag);
 	ecs_set_id(world, camera_entity, ecs_id(CameraSetting), sizeof(CameraSetting), &setting);
 	ecs_set_id(world, camera_entity, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &trans);
-	//ecs_set_id(world, camera_entity, ecs_id(CameraViewProj), sizeof(CameraViewProj), &viewProjC);
+	ecs_set_id(world, camera_entity, ecs_id(CameraViewProj), sizeof(CameraViewProj), &viewProjC);
 
 	return camera_entity;
 }
@@ -27,7 +27,7 @@ ecs_entity_t init_camera(ecs_world_t* world)
 	ECS_COMPONENT(world, LocalTransfrom);
 
 	CameraSetting camera_setting;
-	camera_setting.orthoSize = 2.0f;
+	camera_setting.orthoSize = 4.0f;
 	camera_setting.farPlane = 100.0f;
 	camera_setting.nearPlane = 0.1f;
 	camera_setting.persMode = 0;

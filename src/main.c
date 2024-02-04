@@ -1,30 +1,3 @@
-//TODO: updaet snake to window version
-//#include <stdio.h>
-//#include <time.h>
-//#include "header.h"
-//
-//int main()
-//{
-//	srand((unsigned int)time(NULL));
-//
-//	game_init();
-//
-//	move_snake_t = move_tick_time;
-//	while (exit_app == 0)
-//	{
-//		input_read();
-//		app_update_time();
-//
-//		if (pause == 1)
-//			continue;
-//
-//		game_update();
-//	}
-//
-//	delete_game_data();
-//	return 0;
-//}
-
 #define _CRT_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_WARNINGS
 
@@ -56,9 +29,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 static void glfw_error_callback(int error, const char* description);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void GLFW_init();
-void draw_renderer(const LocalTransfrom* trans, const RenderData* renderData, const mat4x4* view, const mat4x4* proj, const GLuint modevMatPath);
 void init_OpenGL();
 GLFWwindow* window_create(char* title);
+void render_object_system(ecs_iter_t* it);
+void update_camera_matrix(ecs_iter_t* it);
+void player_move(ecs_iter_t* it);
+void draw_obj(LocalTransfrom* trans, RenderData* renderData);
+
+
 
 Vertex vertices[4] = {
 	{{ 1.0f,  1.0f, 0},  {1,1,1,1},  { 1.0f, 1.0f  }},  // top right
@@ -83,11 +61,12 @@ FILE* log_file_ptr;
 const char* log_file_name = "log.txt";
 const char* log_file_mode = "w";
 
-void update_camera_matrix(ecs_iter_t* it);
-void player_move_camera(ecs_iter_t* it);
-
 GLFWwindow* window;
-
+GLuint shaderProgram;
+GLuint modelLoc;
+GLuint viewLoc;
+GLuint projectionLoc;
+ecs_entity_t camera_entity;
 int main()
 {
 	ecs_world_t* world = ecs_init();
@@ -95,14 +74,15 @@ int main()
 	ECS_COMPONENT(world, CameraSetting);
 	ECS_COMPONENT(world, CameraViewProj);
 	ECS_COMPONENT(world, LocalTransfrom);
-	ECS_COMPONENT(world, LocalToWorld);
+	ECS_COMPONENT(world, RenderData);
 
 	ECS_TAG(world, Camera);
 
 	ECS_SYSTEM(world, update_camera_matrix, EcsOnUpdate, CameraViewProj, [in] CameraSetting, [in] LocalTransfrom);
-	ECS_SYSTEM(world, player_move_camera, EcsOnUpdate, LocalTransfrom, CameraSetting);
+	ECS_SYSTEM(world, player_move, EcsOnUpdate, LocalTransfrom, CameraSetting);
+	ECS_SYSTEM(world, render_object_system, EcsOnUpdate, LocalTransfrom, RenderData);
 
-	ecs_entity_t camera_entity = init_camera(world);
+	camera_entity = init_camera(world);
 
 	logger_init();
 	random_init();
@@ -152,7 +132,7 @@ int main()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, defTextWidth, defTextHeigh, 0, GL_RGBA, GL_FLOAT, defaultTextureData);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	GLuint vertex_shader, fragment_shader, shaderProgram;
+	GLuint vertex_shader, fragment_shader;
 
 	//create shader prog
 	log_info("read vertex_shader");
@@ -166,9 +146,9 @@ int main()
 	glAttachShader(shaderProgram, fragment_shader);
 	glLinkProgram(shaderProgram);
 
-	GLuint modelLoc = glGetUniformLocation(shaderProgram, "model");
-	GLuint viewLoc = glGetUniformLocation(shaderProgram, "view");
-	GLuint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
+	modelLoc = glGetUniformLocation(shaderProgram, "model");
+	viewLoc = glGetUniformLocation(shaderProgram, "view");
+	projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
 	//create meshes
 	MeshData quad_mesh = { 0 };
@@ -190,17 +170,24 @@ int main()
 	RenderData quad_render = { 0 };
 	quad_render.renderBuffer = quad_buffer;
 	quad_render.texture = png_g_texture;
+
 	RenderData circle_render = { 0 };
 	circle_render.renderBuffer = circle_buffer;
 	circle_render.texture = g_texture;
 
 	LocalTransfrom img_transform = transform_default();
 	img_transform.position.x = 0.2f;
-
-	float angle = 0;//angle_to_radians(45);
-
-	img_transform.rotation = angle;
 	LocalTransfrom transformCircle = transform_default();
+
+	ecs_entity_t reward_entity = ecs_entity(world, { .name = "Reward" });
+	
+	ecs_set_id(world, reward_entity, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &img_transform);
+	ecs_set_id(world, reward_entity, ecs_id(RenderData), sizeof(RenderData), &quad_render);
+
+	ecs_entity_t snake_entity = ecs_entity(world, { .name = "Snake" });
+
+	ecs_set_id(world, snake_entity, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transformCircle);
+	ecs_set_id(world, snake_entity, ecs_id(RenderData), sizeof(RenderData), &circle_render);
 
 	char window_title[100] = "";
 
@@ -215,26 +202,22 @@ int main()
 
 		app_update_time();
 		AppTime time = app_time_get();
-
 		app_update_fps(time.delta_time);
-
-		glClearColor(0, 0, 0, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
 
 		ecs_progress(world, time.delta_time);
 
-		const CameraSetting* camSetting = ecs_get(world, camera_entity, CameraSetting);
-		CameraViewProj* cam_view_proj = ecs_get_mut(world, camera_entity, CameraViewProj);
+		//glClearColor(0, 0, 0, 1.0f);
+		//glClear(GL_COLOR_BUFFER_BIT);
+		//
+		//CameraViewProj* cam_view_proj = ecs_get_mut(world, camera_entity, CameraViewProj);
+		////start shader prog
+		//glUseProgram(shaderProgram);
 
-		//start shader prog
-		glUseProgram(shaderProgram);
+		////update proj and view
+		//glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->proj);
+		//glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->view);
 
-		//update proj and view
-		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->proj);
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->view);
-
-		draw_renderer(&img_transform, &quad_render, &cam_view_proj->view, &cam_view_proj->proj, modelLoc);
-		//draw_renderer(&transformCircle, &circle_render, &cam_view_proj->view, &cam_view_proj->proj, modelLoc);
+		//draw_obj(&img_transform, &quad_render);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -268,11 +251,64 @@ int main()
 	exit(EXIT_SUCCESS);
 }
 
+void render_object_system(ecs_iter_t* it) {
+
+	ECS_COMPONENT(it->world, CameraViewProj);
+
+	glClearColor(0, 0, 0, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	CameraViewProj* cam_view_proj = ecs_get_mut(it->world, camera_entity, CameraViewProj);
+
+	//start shader prog
+	glUseProgram(shaderProgram);
+
+	//update proj and view
+	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->proj);
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->view);
+
+	LocalTransfrom* transfroms = ecs_field(it, LocalTransfrom, 1);
+	RenderData* renderers = ecs_field(it, RenderData, 2);
+
+	for (int i = 0; i < it->count; i++)
+	{		
+		LocalTransfrom* trans = &transfroms[i];
+		RenderData* renderData = &renderers[i];
+
+		draw_obj(trans, renderData);
+	}
+}
+
+void draw_obj(LocalTransfrom* trans, RenderData* renderData)
+{
+	mat4x4 modelMat;
+
+	mat4x4_translate_vec3(modelMat, &trans->position);
+	mat4x4_rotate_Z(modelMat, modelMat, trans->rotation);
+	mat4x4_scale(modelMat, modelMat, trans->scale);
+
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (const GLfloat*)modelMat);
+
+	glBindTexture(GL_TEXTURE_2D, renderData->texture);
+
+	glBindVertexArray(renderData->renderBuffer.VAO);
+
+	if (renderData->renderBuffer.EBO != NULL)
+	{
+		//log_info("%i", renderData->renderBuffer.meshData.indicesLen);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderData->renderBuffer.EBO);
+		glDrawElements(GL_TRIANGLES, renderData->renderBuffer.meshData.indicesLen, GL_UNSIGNED_INT, 0);
+	}
+	else
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, renderData->renderBuffer.VBO);
+		glDrawArrays(GL_TRIANGLES, 0, renderData->renderBuffer.meshData.verticesLen);
+	}
+}
 
 Vec3 camera_front = { 0, 0, -1.0f };
 Vec3 camera_up =	{ 0, 1.0f, 0 };
 Vec3 camera_right = { 1.0f, 0.0f, 0 };
-
 
 void update_camera_matrix(ecs_iter_t* it) {
 
@@ -319,7 +355,7 @@ void update_camera_matrix(ecs_iter_t* it) {
 	}
 }
 
-void player_move_camera(ecs_iter_t* it) {
+void player_move(ecs_iter_t* it) {
 
 	float delta_time = it->delta_time;
 	float speed = 2.5f * delta_time;
@@ -347,7 +383,7 @@ void player_move_camera(ecs_iter_t* it) {
 			vec3_mul_value(&vec, &vec, speed);
 			vec3_add(&trans[i].position, &trans[i].position, &vec);
 		}
-
+		
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		{
 			Vec3 vec = camera_right;
@@ -400,32 +436,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
-void draw_renderer(const LocalTransfrom* trans, const RenderData* renderData, const mat4x4* view, const mat4x4* proj, const GLuint modevMatPath)
-{
-	mat4x4 modelMat;
-
-	mat4x4_translate_vec3(modelMat, &trans->position);
-	mat4x4_scale(modelMat, modelMat, trans->scale);
-	mat4x4_rotate_Z(modelMat, modelMat, trans->rotation);
-
-	glUniformMatrix4fv(modevMatPath, 1, GL_FALSE, (const GLfloat*)modelMat);
-
-	glBindTexture(GL_TEXTURE_2D, renderData->texture);
-
-	glBindVertexArray(renderData->renderBuffer.VAO);
-
-	if (renderData->renderBuffer.EBO != NULL)
-	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderData->renderBuffer.EBO);
-		glDrawElements(GL_TRIANGLES, renderData->renderBuffer.meshData.indicesLen, GL_UNSIGNED_INT, 0);
-	}
-	else
-	{
-		glBindBuffer(GL_ARRAY_BUFFER, renderData->renderBuffer.VBO);
-		glDrawArrays(GL_TRIANGLES, 0, renderData->renderBuffer.meshData.verticesLen);
-	}
-}
-
 void GLFW_init()
 {
 	glfwSetErrorCallback(glfw_error_callback);
@@ -442,6 +452,37 @@ void GLFW_init()
 	}
 }
 
+float lastX = 400, lastY = 300;
+int firstMouse = 1;
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouse)
+	{
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = 0;
+	}
+
+	float xoffset = xpos - lastX;
+	float yoffset = lastY - ypos;
+	lastX = xpos;
+	lastY = ypos;
+
+	float sensitivity = 0.1f;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	
+}
+
 GLFWwindow* window_create(char* title)
 {
 	log_info("glfwCreateWindow");
@@ -455,8 +496,10 @@ GLFWwindow* window_create(char* title)
 		exit(EXIT_FAILURE);
 	}
 
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetKeyCallback(window, key_callback);
-
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetScrollCallback(window, scroll_callback);
 	glfwMakeContextCurrent(window);
 	gladLoadGL(glfwGetProcAddress);
 	glfwSwapInterval(1);
