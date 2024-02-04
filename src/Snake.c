@@ -3,6 +3,7 @@
 #include "header.h"
 #include <string.h> 
 #include "game_time.h"
+#include "game_math.h"
 
 Vector2_Int move_input = { .x = 1, .y = 0 };
 
@@ -177,15 +178,6 @@ Vector2_Int reward_generate_random_position(const  Rect2D_Int rect, Snake* snake
 	return result;
 }
 
-//Sample
-// Retrieve a random number between 100 and 200
-// min = 100
-// max = 201
-int random_int(int min, int max)
-{
-	return min + (rand() % (max - min));
-}
-
 Grid grid_create(int width, int height)
 {
 	Grid grid;
@@ -194,14 +186,14 @@ Grid grid_create(int width, int height)
 	grid.width = width;
 
 
-	char** grid_array = malloc(sizeof(char*) * height);
+	char** grid_array = (char**) malloc(sizeof(char*) * height);
 
 	//create array
 	for (int y = 0; y < width; y++) {
 
 		// Declare a memory block
 		// of size n
-		grid_array[y] = malloc(sizeof(char) * width);
+		grid_array[y] = (char*) malloc(sizeof(char) * width);
 
 		for (int x = 0; x < width; x++)
 		{

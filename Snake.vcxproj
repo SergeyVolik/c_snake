@@ -151,13 +151,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\camera.c" />
     <ClCompile Include="src\file_helper.c" />
+    <ClCompile Include="src\flecs.c" />
     <ClCompile Include="src\game_math.c" />
     <ClCompile Include="src\game_time.c" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\image.c" />
+    <ClCompile Include="src\LocalTransform.c" />
     <ClCompile Include="src\log.c" />
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\rendering.c" />
     <ClCompile Include="src\shader.c" />
     <ClCompile Include="src\Snake.c" />
   </ItemGroup>
@@ -166,12 +170,16 @@
     <None Include="shaders\vert_shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="inc\camera.h" />
     <ClInclude Include="inc\file_helper.h" />
+    <ClInclude Include="inc\flecs.h" />
     <ClInclude Include="inc\game_math.h" />
     <ClInclude Include="inc\header.h" />
     <ClInclude Include="inc\image.h" />
     <ClInclude Include="inc\linmath.h" />
+    <ClInclude Include="inc\LocalTransform.h" />
     <ClInclude Include="inc\log.h" />
+    <ClInclude Include="inc\rendering.h" />
     <ClInclude Include="inc\shader.h" />
     <ClInclude Include="inc\stb_image.h" />
     <ClInclude Include="inc\game_time.h" />
