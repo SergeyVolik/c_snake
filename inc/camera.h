@@ -6,7 +6,12 @@
 
 typedef struct CameraSetting
 {
+	int persMode;
+
 	float orthoSize;
+
+	float fov;
+
 	float nearPlane;
 	float farPlane;
 

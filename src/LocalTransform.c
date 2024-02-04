@@ -9,7 +9,7 @@ LocalTransfrom transform_default()
 	tran.position = pos;
 
 	tran.scale = 1.0f;
-	tran.rotation = 0;
+	tran.rotation = 0.0f;
 	return tran;
 }
 
