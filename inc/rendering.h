@@ -53,9 +53,12 @@ typedef struct
 
 } Shader;
 
+RenderData create_renderer(MeshData mesh, GLuint texture);
 void mesh_free(MeshData mesh);
 void printf_color(Color* color);
 Color* create_color_texture(int width, int height, Color color);
+
+MeshData create_quad_mesh();
 MeshData create_circle_mesh(int segments);
 EBOBuffer create_element_array_buffer(MeshData mesh);
 

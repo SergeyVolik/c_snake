@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "game_math.h"
 #include <stdlib.h>
+#include <stdbool.h>
 
 void printf_color(Color* color)
 {
@@ -42,6 +43,32 @@ void mesh_free(MeshData mesh)
 	{
 		free(mesh.vertices);
 	}
+}
+
+Vertex vertices[4] = {
+	{{ 1.0f,  1.0f, 0},  {1,1,1,1},  { 1.0f, 1.0f  }},  // top right
+	{{ 1.0f, -1.0f, 0},  {1,1,1,1},  { 1.0f, 0.0f  }}, // bottom right
+	{{-1.0f, -1.0f, 0},  {1,1,1,1},  { 0.0f, 0.0f  }}, // bottom left
+	{{-1.0f,  1.0f, 0},  {1,1,1,1},  { 0.0f, 1.0f  }},// top left 
+};
+
+unsigned int indices[6] = {  // note that we start from 0!
+	0, 1, 3,   // first triangle
+	1, 2, 3    // second triangle
+};
+
+MeshData create_quad_mesh()
+{
+	//create meshes
+	MeshData quad_mesh = { 0 };
+
+	quad_mesh.indices = indices;
+	quad_mesh.indicesLen = 6;
+	quad_mesh.avoidFreeMemory = true;
+	quad_mesh.vertices = vertices;
+	quad_mesh.verticesLen = 4;
+
+	return quad_mesh;
 }
 
 MeshData create_circle_mesh(int segments)
@@ -99,7 +126,20 @@ MeshData create_circle_mesh(int segments)
 	mesh.verticesLen = arrayLen;
 	mesh.indices = indices;
 	mesh.indicesLen = arrayLen;
+
 	return mesh;
+}
+
+RenderData create_renderer(MeshData mesh, GLuint texture)
+{
+	EBOBuffer buff = create_element_array_buffer(mesh);
+
+	RenderData data = {
+		.renderBuffer = buff,
+		.texture = texture
+	};
+
+	return data;
 }
 
 EBOBuffer create_element_array_buffer(MeshData mesh)

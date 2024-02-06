@@ -1,17 +1,17 @@
-2024-02-04 17:16:57 INFO  E:\c_snake\src\main.c:90: logger inited
-2024-02-04 17:16:57 INFO  E:\c_snake\src\main.c:428: Error: The GLFW library is not initialized
-2024-02-04 17:16:57 INFO  E:\c_snake\src\main.c:428: Error: The GLFW library is not initialized
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:492: glfwCreateWindow
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:510: Window Created
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:97: init_OpenGL
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:100: load_resources
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:105: load image file
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:115: create_color_texture
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:120: create textures
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:138: read vertex_shader
-2024-02-04 17:16:58 INFO  E:\c_snake\src\file_helper.c:16: read_file
-2024-02-04 17:16:58 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-04 17:16:58 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:103: logger inited
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:422: Error: The GLFW library is not initialized
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:422: Error: The GLFW library is not initialized
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:486: glfwCreateWindow
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:504: Window Created
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:110: init_OpenGL
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:113: load_resources
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:118: load image file
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:127: create_color_texture
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:132: create textures
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:150: read vertex_shader
+2024-02-06 17:13:03 INFO  E:\c_snake\src\file_helper.c:16: read_file
+2024-02-06 17:13:03 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-06 17:13:03 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
 
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec4 aColor;
@@ -31,12 +31,12 @@ void main()
     vertexColor = aColor;
     TexCoord = aTexCoord;
 }
-2024-02-04 17:16:58 INFO  E:\c_snake\src\file_helper.c:52: close file
-2024-02-04 17:16:58 INFO  E:\c_snake\src\shader.c:36: free file text
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:140: read fragment_shader
-2024-02-04 17:16:58 INFO  E:\c_snake\src\file_helper.c:16: read_file
-2024-02-04 17:16:58 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-04 17:16:58 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
+2024-02-06 17:13:03 INFO  E:\c_snake\src\file_helper.c:52: close file
+2024-02-06 17:13:03 INFO  E:\c_snake\src\shader.c:36: free file text
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:152: read fragment_shader
+2024-02-06 17:13:03 INFO  E:\c_snake\src\file_helper.c:16: read_file
+2024-02-06 17:13:03 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-06 17:13:03 INFO  E:\c_snake\src\file_helper.c:51: content: #version 330 core
 
 out vec4 FragColor;
 
@@ -49,7 +49,7 @@ void main()
 {
     FragColor = texture(ourTexture, TexCoord) * vertexColor;
 }
-2024-02-04 17:16:58 INFO  E:\c_snake\src\file_helper.c:52: close file
-2024-02-04 17:16:58 INFO  E:\c_snake\src\shader.c:36: free file text
-2024-02-04 17:16:58 INFO  E:\c_snake\src\main.c:143: glCreateProgram
-2024-02-04 17:17:01 INFO  E:\c_snake\src\main.c:226: destroy glfw window
+2024-02-06 17:13:03 INFO  E:\c_snake\src\file_helper.c:52: close file
+2024-02-06 17:13:03 INFO  E:\c_snake\src\shader.c:36: free file text
+2024-02-06 17:13:03 INFO  E:\c_snake\src\main.c:155: glCreateProgram
+2024-02-06 17:13:08 INFO  E:\c_snake\src\main.c:224: destroy glfw window
