@@ -122,6 +122,7 @@ MeshData create_circle_mesh(int segments)
 
 		offset += 1;
 	}
+
 	mesh.vertices = vertexArray;
 	mesh.verticesLen = arrayLen;
 	mesh.indices = indices;

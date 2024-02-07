@@ -27,7 +27,7 @@ ecs_entity_t init_camera(ecs_world_t* world)
 	ECS_COMPONENT(world, LocalTransfrom);
 
 	CameraSetting camera_setting;
-	camera_setting.orthoSize = 4.0f;
+	camera_setting.orthoSize = 8.0f;
 	camera_setting.farPlane = 100.0f;
 	camera_setting.nearPlane = 0.1f;
 	camera_setting.persMode = 0;

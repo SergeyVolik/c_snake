@@ -47,12 +47,6 @@ typedef struct
 
 } RenderData;
 
-typedef struct
-{
-	GLuint shaderProgram;
-
-} Shader;
-
 RenderData create_renderer(MeshData mesh, GLuint texture);
 void mesh_free(MeshData mesh);
 void printf_color(Color* color);

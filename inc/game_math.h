@@ -17,5 +17,5 @@ typedef struct Rect
 float angle_to_radians(float angle);
 void random_init();
 int random_int(int min, int max);
-
+float random_float(float min, float max);
 #endif

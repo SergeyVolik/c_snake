@@ -29,6 +29,16 @@ typedef struct SnakeHead1
 	Vec2 direction;
 } SnakeHead1;
 
+typedef struct RenderImage
+{
+	GLuint texture;
+} RenderImage;
+
+typedef struct ShaderProg
+{
+	GLuint shaderID;
+} ShaderProg;
+
 void logger_init();
 void logger_free();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -39,15 +49,20 @@ void init_OpenGL();
 GLFWwindow* window_create(char* title);
 void render_object_system(ecs_iter_t* it);
 void render_view_system(ecs_iter_t* it);
+void setup_render_buffer_system(ecs_iter_t* it);
 void update_camera_matrix(ecs_iter_t* it);
 void player_move(ecs_iter_t* it);
+void cleanup_render_data(ecs_iter_t* it);
+void delete_entity_sys(ecs_iter_t* it);
 void draw_obj(LocalTransfrom* trans, RenderData* renderData);
-
+ShaderProg shader_create(const char* vert_path, const char* fragm_path);
 
 int targetFPS = 144;
 
-const char* vert_shader_path = "./resources/shaders/vert_shader.vert";
-const char* framg_shader_path = "./resources/shaders/fragm_shader.frag";
+const char* vert_shader_default_path = "./resources/shaders/vert_shader_default.vert";
+const char* framg_shader_default_path = "./resources/shaders/fragm_shader_default.frag";
+const char* vert_shader_2_path = "./resources/shaders/vert_shader2.vert";
+const char* framg_shader_2_path = "./resources/shaders/fragm_shader2.frag";
 const char* tga_image_path = "./resources/dwsample-tga-640.tga";
 const char* png_image_path = "./resources/test.png";
 
@@ -56,46 +71,87 @@ const char* log_file_name = "log.txt";
 const char* log_file_mode = "w";
 
 GLFWwindow* window;
-GLuint shaderProgram;
+ShaderProg shader_program;
+ShaderProg shaderProgram2;
+
 GLuint modelLoc;
 GLuint viewLoc;
 GLuint projectionLoc;
 ecs_entity_t camera_entity;
 
+Vec3 camera_front = { 0, 0, -1.0f };
+Vec3 camera_up = { 0, 1.0f, 0 };
+Vec3 camera_right = { 1.0f, 0.0f, 0 };
+
+ecs_entity_t snake_entity_prefab;
+ecs_world_t* world_def;
+
+ECS_COMPONENT_DECLARE(CameraSetting);
+ECS_COMPONENT_DECLARE(CameraViewProj);
+ECS_COMPONENT_DECLARE(LocalTransfrom);
+ECS_COMPONENT_DECLARE(RenderData);
+ECS_COMPONENT_DECLARE(SnakeHead1);
+ECS_COMPONENT_DECLARE(RenderImage);
+
+ECS_TAG_DECLARE(Camera);
+ECS_TAG_DECLARE(DeleteTag);
+
 int main(int argc, char* argv[])
 {
-
-
-	ecs_world_t* world = ecs_init_w_args(argc, argv);
+	world_def = ecs_init_w_args(argc, argv);
 
 	// Start REST API with default parameters
-	ecs_singleton_set(world, EcsRest, { 0 });
+	ecs_singleton_set(world_def, EcsRest, { 0 });
 
-	ECS_IMPORT(world, FlecsMonitor);
+	ECS_IMPORT(world_def, FlecsMonitor);
 
-	ECS_COMPONENT(world, CameraSetting);
-	ECS_COMPONENT(world, CameraViewProj);
-	ECS_COMPONENT(world, LocalTransfrom);
-	ECS_COMPONENT(world, RenderData);
-	ECS_COMPONENT(world, SnakeHead1);
+	ECS_COMPONENT_DEFINE(world_def, CameraSetting);
+	ECS_COMPONENT_DEFINE(world_def, CameraViewProj);
+	ECS_COMPONENT_DEFINE(world_def, LocalTransfrom);
+	ECS_COMPONENT_DEFINE(world_def, RenderData);
+	ECS_COMPONENT_DEFINE(world_def, SnakeHead1);
+	ECS_COMPONENT_DEFINE(world_def, RenderImage);
 
-	ECS_TAG(world, Camera);
+	ECS_TAG_DEFINE(world_def, Camera);
+	ECS_TAG_DEFINE(world_def, DeleteTag);
 
-	ECS_SYSTEM(world, update_camera_matrix, EcsOnUpdate, CameraViewProj, [in] CameraSetting, [in] LocalTransfrom);
-	ECS_SYSTEM(world, player_move, EcsOnUpdate, LocalTransfrom, CameraSetting);
-	ECS_SYSTEM(world, render_view_system, EcsOnUpdate, CameraSetting, CameraViewProj);
-	ECS_SYSTEM(world, render_object_system, EcsOnUpdate, LocalTransfrom, RenderData);
+	ECS_SYSTEM(world_def, update_camera_matrix, EcsOnUpdate, CameraViewProj, [in] CameraSetting, [in] LocalTransfrom);
+	ECS_SYSTEM(world_def, player_move, EcsOnUpdate, LocalTransfrom, CameraSetting);
+	
 
-	//ecs_entity_t render_object_system_e = ecs_system(world, {
+	
+	ecs_entity_t test_sys = ecs_system(world_def, {
+		.entity = ecs_entity(world_def, { /* ecs_entity_desc_t */
+		.name = "setup_render_buffer_system",
+		.add = { ecs_dependson(EcsOnUpdate) }
+		}),
+		.query.filter.terms = {
+			{ecs_id(RenderImage),.oper = EcsAnd },
+			{ecs_id(RenderData),.oper = EcsNot   },
+		},
+		.callback = setup_render_buffer_system
+		});
+
+	ECS_SYSTEM(world_def, render_view_system, EcsOnUpdate, CameraSetting, CameraViewProj);
+	ECS_SYSTEM(world_def, render_object_system, EcsOnUpdate, LocalTransfrom, RenderData);
+	
+	//cleanup
+	ECS_SYSTEM(world_def, cleanup_render_data, EcsOnUpdate, RenderData, DeleteTag);
+	ECS_SYSTEM(world_def, delete_entity_sys, EcsOnUpdate, DeleteTag);
+
+
+	//manula sys creation
+	//ecs_entity_t test_sys = ecs_system(world, {
 	//	.query.filter.terms = {
-	//		{ecs_id(LocalTransfrom),.oper = EcsAnd },
-	//		{ecs_id(RenderData),.oper = EcsAnd  },
-	//		//{ecs_id(CameraViewProj), .oper = EcsNot },
+	//		{ecs_id(Comp),.oper = EcsAnd },
+	//		{ecs_id(Comp),.oper = EcsOr   },
+	//		{ecs_id(Comp), .oper = EcsNot  },
+	//		{ecs_id(Comp), .oper = EcsOptional   },
 	//	},
-	//	.callback = render_object_system
+	//	.callback = sys_name
 	//});
 
-	camera_entity = init_camera(world);
+	camera_entity = init_camera(world_def);
 
 	logger_init();
 	random_init();
@@ -144,60 +200,37 @@ int main(int argc, char* argv[])
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, defTextWidth, defTextHeigh, 0, GL_RGBA, GL_FLOAT, defaultTextureData);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
-	GLuint vertex_shader, fragment_shader;
 
-	//create shader prog
-	log_info("read vertex_shader");
-	vertex_shader = shader_load_from_file(vert_shader_path, GL_VERTEX_SHADER);
-	log_info("read fragment_shader");
-	fragment_shader = shader_load_from_file(framg_shader_path, GL_FRAGMENT_SHADER);
+	shader_program = shader_create(vert_shader_default_path, framg_shader_default_path);
+	shaderProgram2 = shader_create(vert_shader_2_path, framg_shader_2_path);
 
-	log_info("glCreateProgram");
-	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertex_shader);
-	glAttachShader(shaderProgram, fragment_shader);
-	glLinkProgram(shaderProgram);
-
-	modelLoc = glGetUniformLocation(shaderProgram, "model");
-	viewLoc = glGetUniformLocation(shaderProgram, "view");
-	projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-
-
-	RenderData quad_render = create_renderer(create_quad_mesh(), png_g_texture);
+	modelLoc = glGetUniformLocation(shader_program.shaderID, "model");
+	viewLoc = glGetUniformLocation(shader_program.shaderID, "view");
+	projectionLoc = glGetUniformLocation(shader_program.shaderID, "projection");
 
 	LocalTransfrom img_transform = transform_default();
 	img_transform.position.x = 1.0f;
+	RenderImage img2 = { png_g_texture };
+	ecs_entity_t reward_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
 
-	ecs_entity_t reward_entity = ecs_entity(world, { .name = "Reward" });
-
-	ecs_set_id(world, reward_entity, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &img_transform);
-	ecs_set_id(world, reward_entity, ecs_id(RenderData), sizeof(RenderData), &quad_render);
-
+	ecs_set_id(world_def, reward_entity_prefab, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &img_transform);
+	ecs_set_id(world_def, reward_entity_prefab, ecs_id(RenderImage), sizeof(RenderImage), &img2);
 
 	SnakeHead1 snakeHead = { .speed = 1.0f, .direction = { 0, 1 } };
 
-	LocalTransfrom transformCircle = transform_default();
+	snake_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
+	RenderImage img = { g_texture };
 
-	int seg = 20;
-	RenderData circle_render = create_renderer(create_circle_mesh(seg), g_texture);
+	LocalTransfrom transform_snake = transform_default();
+	ecs_set_id(world_def, snake_entity_prefab, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transform_snake);
+	ecs_set_id(world_def, snake_entity_prefab, ecs_id(SnakeHead1), sizeof(SnakeHead1), &snakeHead);
+	ecs_set_id(world_def, snake_entity_prefab, ecs_id(RenderImage), sizeof(RenderImage), &img);
 
-	ecs_entity_t snake_entity = ecs_entity(world, { .name = "Snake" });
+	ecs_entity_t snake_entity_instance = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
+	ecs_entity_t snake_entity_instance2 = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
+	ecs_entity_t snake_entity_instance3 = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
 
-	ecs_set_id(world, snake_entity, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transformCircle);
-	ecs_set_id(world, snake_entity, ecs_id(RenderData), sizeof(RenderData), &circle_render);
-	ecs_set_id(world, snake_entity, ecs_id(SnakeHead1), sizeof(SnakeHead1), &snakeHead);
-
-	LocalTransfrom transformCircle2 = transform_default();
-	transformCircle2.position.y = 1.5;	
-	RenderData circle_render2 = create_renderer(create_circle_mesh(seg), g_texture);
-
-	ecs_entity_t snake_entity2 = ecs_entity(world, { .name = "Snake2" });
-
-	ecs_set_id(world, snake_entity2, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transformCircle2);
-	ecs_set_id(world, snake_entity2, ecs_id(RenderData), sizeof(RenderData), &circle_render2);
-	ecs_set_id(world, snake_entity2, ecs_id(SnakeHead1), sizeof(SnakeHead1), &snakeHead);
-
-	char window_title[100] = "";
+	char window_title[50] = "";
 
 	sprintf(window_title, app_name, 0);
 
@@ -216,16 +249,14 @@ int main(int argc, char* argv[])
 
 		app_update_fps(delta_time);
 
-		ecs_progress(world, delta_time);
+		ecs_progress(world_def, delta_time);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 
 	log_info("destroy glfw window");
 
-	glDeleteShader(vertex_shader);
-	glDeleteShader(fragment_shader);
-	glDeleteProgram(shaderProgram);
+	glDeleteProgram(shader_program.shaderID);
 	glDeleteTextures(1, &png_g_texture);
 
 	glfwDestroyWindow(window);
@@ -237,10 +268,32 @@ int main(int argc, char* argv[])
 	free(defaultTextureData);
 	stbi_image_free(image_data);
 
-	ecs_fini(world);
+	ecs_fini(world_def);
 
-	//system("pause");
 	exit(EXIT_SUCCESS);
+}
+
+ShaderProg shader_create(const char* vert_path, const char* fragm_path)
+{
+	ShaderProg shader;
+	GLuint vertex_shader, fragment_shader;
+
+	//create shader prog
+	log_info("read vertex_shader");
+	vertex_shader = shader_load_from_file(vert_path, GL_VERTEX_SHADER);
+	log_info("read fragment_shader");
+	fragment_shader = shader_load_from_file(fragm_path, GL_FRAGMENT_SHADER);
+
+	log_info("glCreateProgram");
+	shader.shaderID = glCreateProgram();
+	glAttachShader(shader.shaderID, vertex_shader);
+	glAttachShader(shader.shaderID, fragment_shader);
+	glLinkProgram(shader.shaderID);
+
+	glDeleteShader(vertex_shader);
+	glDeleteShader(fragment_shader);
+
+	return shader;
 }
 
 void render_view_system(ecs_iter_t* it) {
@@ -253,23 +306,59 @@ void render_view_system(ecs_iter_t* it) {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//start shader prog
-	glUseProgram(shaderProgram);
+	glUseProgram(shader_program.shaderID);
 
 	//update proj and view
 	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->proj);
 	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->view);
 }
 
+void setup_render_buffer_system(ecs_iter_t* it) {
+
+	ECS_COMPONENT(it->world, RenderData);
+
+	RenderImage* imges = ecs_field(it, RenderImage, 1);
+
+	for (int i = 0; i < it->count; i++)
+	{
+		RenderImage* trans = &imges[i];
+
+		RenderData quad_render = create_renderer(create_quad_mesh(), trans->texture);
+		ecs_set_id(it->world, it->entities[i], ecs_id(RenderData), sizeof(RenderData), &quad_render);
+	}
+}
+
+
+void delete_entity_sys(ecs_iter_t* it) {
+
+	for (size_t i = 0; i < it->count; i++)
+	{
+		log_info("delete entity");
+		ecs_delete(it->world, it->entities[i]);
+	}
+}
+
+void cleanup_render_data(ecs_iter_t* it) {
+
+	RenderData* imges = ecs_field(it, RenderData, 1);
+
+	for (size_t i = 0; i < it->count; i++)
+	{
+		log_info("delete render data");
+		glDeleteBuffers(1, &imges[i].renderBuffer.VBO);
+		glDeleteVertexArrays(1, &imges[i].renderBuffer.VAO);
+	}
+}
+
 void render_object_system(ecs_iter_t* it) {
 
 	LocalTransfrom* transfroms = ecs_field(it, LocalTransfrom, 1);
 	RenderData* renderers = ecs_field(it, RenderData, 2);
-
-	printf("obj to render %i\n", it->count);
+	AppTime time = app_time_get();
+	//log_info("render obj %i time: %f", it->count, time.total_time);
 
 	for (int i = 0; i < it->count; i++)
 	{
-
 		LocalTransfrom* trans = &transfroms[i];
 		RenderData* renderData = &renderers[i];
 
@@ -303,10 +392,6 @@ void draw_obj(LocalTransfrom* trans, RenderData* renderData)
 		glDrawArrays(GL_TRIANGLES, 0, renderData->renderBuffer.meshData.verticesLen);
 	}
 }
-
-Vec3 camera_front = { 0, 0, -1.0f };
-Vec3 camera_up = { 0, 1.0f, 0 };
-Vec3 camera_right = { 1.0f, 0.0f, 0 };
 
 void update_camera_matrix(ecs_iter_t* it) {
 
@@ -388,11 +473,6 @@ void player_move(ecs_iter_t* it) {
 			vec3_mul_value(&vec, &vec, speed);
 			vec3_sub(&trans[i].position, &trans[i].position, &vec);
 		}
-
-		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
-		{
-			trans->rotation += speed;
-		}
 	}
 }
 
@@ -427,6 +507,40 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
+
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		log_info("create");
+
+		LocalTransfrom transform_snake = transform_default();
+
+		transform_snake.position.x = random_float(-6, 6);
+		transform_snake.position.y = random_float(-6, 6);
+
+		ecs_entity_t snake_entity_instance = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
+		ecs_set_id(world_def, snake_entity_instance, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transform_snake);
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+	{
+		ecs_filter_t* f = ecs_filter(world_def, {
+		  .terms = {
+			{ ecs_id(LocalTransfrom) },
+			{ ecs_id(SnakeHead1) },
+		  }
+			});
+
+		ecs_iter_t it = ecs_filter_iter(world_def, f);
+
+		// Outer loop: matching tables
+		while (ecs_filter_next(&it)) {
+
+			for (size_t i = 0; i < it.count; i++)
+			{
+				ecs_add(world_def, it.entities[i], DeleteTag);
+			}
+		}
+	}	
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)

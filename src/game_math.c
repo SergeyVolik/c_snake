@@ -20,3 +20,9 @@ int random_int(int min, int max)
 {
 	return min + (rand() % (max - min));
 }
+
+float random_float(float min, float max)
+{
+	float scale = rand() / (float)RAND_MAX; /* [0, 1.0] */
+	return min + scale * (max - min);      /* [min, max] */
+}

@@ -55,6 +55,8 @@
   <ItemGroup>
     <None Include="shaders\fragm_shader.frag" />
     <None Include="shaders\vert_shader.vert" />
+    <None Include="resources\shaders\fragm_shader2.frag" />
+    <None Include="resources\shaders\vert_shader2.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\linmath.h">
