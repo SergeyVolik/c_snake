@@ -66,6 +66,21 @@ typedef struct ShaderProg
 
 } ShaderProg;
 
+typedef struct ShaderRenderOrderData
+{
+	ecs_entity_t renderEntity;
+	int renderOrder;
+
+} ShaderRenderOrderData;
+
+typedef struct CustomArray
+{
+	ShaderRenderOrderData* data;
+	int currentLen;
+	int capacity;
+
+} ShaderRenderArray;
+
 void rendering_init();
 
 RenderData create_renderer(MeshData mesh, GLuint texture);
