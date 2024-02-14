@@ -30,7 +30,7 @@
     <ClCompile Include="src\file_helper.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\game_time.c">
+    <ClCompile Include="src\app.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\game_math.c">
@@ -46,6 +46,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\camera.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\window.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,7 +74,7 @@
     <ClInclude Include="inc\stb_image.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="inc\game_time.h">
+    <ClInclude Include="inc\app.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="inc\game_math.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="inc\camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

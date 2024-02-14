@@ -1,4 +1,4 @@
-#include "game_time.h"
+#include "app.h"
 
 AppTime glob_time = { 0, 0, 0 };
 clock_t old_time = 0;

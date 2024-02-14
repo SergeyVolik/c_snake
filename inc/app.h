@@ -1,5 +1,5 @@
-#ifndef GAME_TIME_H
-#define GAME_TIME_H
+#ifndef APP_TIME_H
+#define APP_TIME_H
 
 #include <time.h>
 

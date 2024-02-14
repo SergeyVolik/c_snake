@@ -4,11 +4,13 @@
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "window.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include "flecs.h"
@@ -16,7 +18,7 @@
 #include "log.h"
 
 #include "image.h" 
-#include "game_time.h"
+#include "app.h"
 #include "game_math.h"
 #include "rendering.h"
 #include "LocalTransform.h"
@@ -28,13 +30,7 @@ typedef struct SnakeHead1
 	Vec2 direction;
 } SnakeHead1;
 
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-static void glfw_error_callback(int error, const char* description);
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void GLFW_init();
-
-GLFWwindow* window_create(char* title);
+//ecs systems
 void render_object_system(ecs_iter_t* it);
 void render_view_system(ecs_iter_t* it);
 void setup_render_buffer_system(ecs_iter_t* it);
@@ -93,6 +89,9 @@ ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab)
 
 	return instance;
 }
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
 int main(int argc, char* argv[])
 {
@@ -156,8 +155,9 @@ int main(int argc, char* argv[])
 
 	char app_name[] = "Snake GLFW ( FPS: %i )";
 
-	GLFW_init();
 	window = window_create(app_name);
+	window_key_input_callback(window, key_callback);
+	window_framebuffer_size_callback(window, framebuffer_size_callback);
 
 	log_info("init_OpenGL");
 	rendering_init();
@@ -205,6 +205,7 @@ int main(int argc, char* argv[])
 	projectionLoc = glGetUniformLocation(shader_program.shaderID, "projection");
 
 	LocalTransfrom img_transform = transform_default();
+
 	img_transform.position.x = 1.0f;
 	RenderImage img2 = { png_g_texture };
 	ecs_entity_t reward_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
@@ -340,7 +341,7 @@ void draw_obj(LocalTransfrom* trans, RenderData* renderData)
 {
 	mat4x4 modelMat;
 
-	mat4x4_translate_vec3(modelMat, &trans->position);
+	mat4x4_translate_vec3(modelMat, (float*) & trans->position);
 	mat4x4_rotate_Z(modelMat, modelMat, trans->rotation);
 	mat4x4_scale(modelMat, modelMat, trans->scale);
 
@@ -365,7 +366,7 @@ void draw_obj(LocalTransfrom* trans, RenderData* renderData)
 
 void update_camera_matrix(ecs_iter_t* it) {
 
-	float width, height;
+	int width, height;
 
 	glfwGetFramebufferSize(window, &width, &height);
 
@@ -397,10 +398,9 @@ void update_camera_matrix(ecs_iter_t* it) {
 			mat4x4_perspective(data->proj, sett[i].fov, width / height, sett[i].nearPlane, sett[i].farPlane);
 		}
 
-
 		Vec3 center = { 0 };
 
-		vec3_add(&center, &trans[i].position, &camera_front);
+		vec3_add((float*) &center, (float*) &trans[i].position, (float*) &camera_front);
 
 		mat4x4_translate(data->view, trans[i].position.x, trans[i].position.y, trans[i].position.z);
 		mat4x4_look_at(data->view, (float*)&trans[i].position, (float*)&center, (float*)&camera_up);
@@ -446,12 +446,6 @@ void player_move(ecs_iter_t* it) {
 	}
 }
 
-static void glfw_error_callback(int error, const char* description)
-{
-	log_info("Error: %s", description);
-	fprintf(stderr, "Error: %s\n", description);
-}
-
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -495,75 +489,4 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
-}
-
-void GLFW_init()
-{
-	glfwSetErrorCallback(glfw_error_callback);
-
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	if (!glfwInit())
-	{
-		log_error("glfwInit failed!");
-		exit(EXIT_FAILURE);
-	}
-}
-
-float lastX = 400, lastY = 300;
-int firstMouse = 1;
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-	if (firstMouse)
-	{
-		lastX = xpos;
-		lastY = ypos;
-		firstMouse = 0;
-	}
-
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;
-	lastX = xpos;
-	lastY = ypos;
-
-	float sensitivity = 0.1f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-
-}
-
-GLFWwindow* window_create(char* title)
-{
-	log_info("glfwCreateWindow");
-
-	GLFWwindow* window = glfwCreateWindow(600, 600, title, NULL, NULL);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-	if (!window)
-	{
-		glfwTerminate();
-		exit(EXIT_FAILURE);
-	}
-
-	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetKeyCallback(window, key_callback);
-	glfwSetCursorPosCallback(window, mouse_callback);
-	glfwSetScrollCallback(window, scroll_callback);
-	glfwMakeContextCurrent(window);
-	gladLoadGL(glfwGetProcAddress);
-	glfwSwapInterval(1);
-	log_info("Window Created");
-	return window;
 }

@@ -155,13 +155,14 @@
     <ClCompile Include="src\file_helper.c" />
     <ClCompile Include="src\flecs.c" />
     <ClCompile Include="src\game_math.c" />
-    <ClCompile Include="src\game_time.c" />
+    <ClCompile Include="src\app.c" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="src\image.c" />
     <ClCompile Include="src\LocalTransform.c" />
     <ClCompile Include="src\log.c" />
     <ClCompile Include="src\main.c" />
     <ClCompile Include="src\rendering.c" />
+    <ClCompile Include="src\window.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\fragm_shader2.frag" />
@@ -180,7 +181,8 @@
     <ClInclude Include="inc\log.h" />
     <ClInclude Include="inc\rendering.h" />
     <ClInclude Include="inc\stb_image.h" />
-    <ClInclude Include="inc\game_time.h" />
+    <ClInclude Include="inc\app.h" />
+    <ClInclude Include="inc\window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
