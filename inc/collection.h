@@ -81,6 +81,10 @@ inline static int nav_list_index_of(NativeList* array, void* elementData)
 	return -1;
 }
 
+inline static void nav_list_free(NativeList* array)
+{
+	free(array->rawData);
+}
 inline static void nav_list_remove_at_spawn_back(NativeList* array, int index)
 {
 	void* last =  &array->rawData + array->count * array->size;

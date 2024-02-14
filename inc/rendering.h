@@ -8,7 +8,7 @@
 #include "LocalTransform.h"
 #include "flecs.h"
 #include "collection.h"
-
+#include "game_math.h"
 typedef struct
 {
 	float r;
@@ -57,6 +57,7 @@ typedef struct RenderImage
 	GLuint texture;
 	ecs_entity_t shader;
 	int renderOrder;
+	Color color;
 
 } RenderImage;
 
@@ -64,7 +65,7 @@ typedef struct RenderImage
 typedef struct ShaderProg
 {
 	GLuint shaderID;
-	
+
 
 } ShaderProg;
 
@@ -75,13 +76,26 @@ typedef struct ShaderRenderOrderData
 
 } ShaderRenderOrderData;
 
-typedef struct CustomArray
+typedef struct ShaderRenderArray
 {
-	ShaderRenderOrderData* data;
-	int currentLen;
-	int capacity;
+	NativeList data;
 
 } ShaderRenderArray;
+
+static int compare(const void* a, const void* b)
+{
+	int int_a = ((ShaderRenderOrderData*)a)->renderOrder;
+	int int_b = ((ShaderRenderOrderData*)b)->renderOrder;
+
+	if (int_a == int_b) return 0;
+	else if (int_a < int_b) return -1;
+	else return 1;
+}
+
+inline static void render_array_sort(ShaderRenderArray array)
+{
+	qsort(array.data.rawData, array.data.count, array.data.size, compare);
+}
 
 void rendering_init();
 
@@ -98,5 +112,41 @@ EBOBuffer create_element_array_buffer(MeshData mesh);
 ShaderProg shader_create(const char* vert_path, const char* fragm_path);
 GLuint shader_load_from_text(char* shader_text, GLenum shader_type);
 GLuint shader_load_from_file(char* shader_path, GLenum shader_type);
+
+inline static Color color_new(float r, float g, float b, float a)
+{
+	Color color = { r, g,b,a };
+	return color;
+}
+
+inline static Color color_red()
+{	
+	return color_new(1.0f, 0, 0 ,1.0f);
+}
+
+inline static Color color_green()
+{
+	return color_new(0, 1.0f, 0, 1.0f);
+}
+
+inline static Color color_blue()
+{
+	return color_new(0, 0, 1.0f, 1.0f);
+}
+
+inline static Color color_black()
+{
+	return color_new(0, 0, 0, 1.0f);
+}
+
+inline static Color color_white()
+{
+	return color_new(1, 1, 1, 1);
+}
+
+inline static Color color_rnd()
+{
+	return color_new(random_float(0, 1), random_float(0, 1), random_float(0, 1), 1);
+}
 
 #endif

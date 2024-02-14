@@ -46,6 +46,8 @@ GLFWwindow* window;
 GLuint modelLoc;
 GLuint viewLoc;
 GLuint projectionLoc;
+GLuint colorLoc;
+
 ecs_entity_t camera_entity;
 
 Vec3 camera_front = { 0, 0, -1.0f };
@@ -170,7 +172,7 @@ int main(int argc, char* argv[])
 
 	log_info("create_color_texture");
 
-	Color defaultColor = { 1,1,1,1 };
+	Color defaultColor = color_white();
 	Color* defaultTextureData = create_color_texture(defTextWidth, defTextHeigh, defaultColor);
 
 	log_info("create textures");
@@ -201,11 +203,12 @@ int main(int argc, char* argv[])
 	modelLoc = glGetUniformLocation(shader_program.shaderID, "model");
 	viewLoc = glGetUniformLocation(shader_program.shaderID, "view");
 	projectionLoc = glGetUniformLocation(shader_program.shaderID, "projection");
+	colorLoc = glGetUniformLocation(shader_program.shaderID, "overrideColor");
 
 	LocalTransfrom img_transform = transform_default();
 
 	img_transform.position.x = 1.0f;
-	RenderImage img2 = { png_g_texture };
+	RenderImage img2 = { .texture = png_g_texture, .color = color_blue() };
 	img2.shader = shader2;
 	ecs_entity_t reward_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
 
@@ -215,8 +218,8 @@ int main(int argc, char* argv[])
 	ecs_set_name(world_def, reward_entity_prefab, "reward prefab");
 	
 	snake_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
-	RenderImage img = { g_texture };
-	img.shader = shader1;
+	RenderImage img = { .texture = g_texture, .color = color_green()};
+	img.shader = shader2;
 	LocalTransfrom transform_snake = transform_default();
 	ecs_set_id(world_def, snake_entity_prefab, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transform_snake);
 	ecs_set_id(world_def, snake_entity_prefab, ecs_id(RenderImage), sizeof(RenderImage), &img);
@@ -288,8 +291,7 @@ void setup_render_buffer_system(ecs_iter_t* it) {
 
 void render_clear_system(ecs_iter_t* it)
 {
-
-	glClearColor(0, 0, 0, 1.0f);
+	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -347,7 +349,7 @@ void render_object_system(ecs_iter_t* it) {
 			mat4x4_scale(modelMat, modelMat, trans->scale);
 
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (const GLfloat*)modelMat);
-
+			glUniform4f(colorLoc, image->color.r, image->color.g, image->color.b, image->color.a);
 			glBindTexture(GL_TEXTURE_2D, renderData->texture);
 
 			glBindVertexArray(renderData->renderBuffer.VAO);
@@ -379,7 +381,6 @@ void cleanup_render_data(ecs_iter_t* it) {
 		glDeleteVertexArrays(1, &imges[i].renderBuffer.VAO);
 	}
 }
-
 
 void update_camera_matrix(ecs_iter_t* it) {
 
@@ -477,8 +478,12 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 		transform_snake.position.x = random_float(-6, 6);
 		transform_snake.position.y = random_float(-6, 6);
 
+		RenderImage* image = ecs_get(world_def, snake_entity_prefab, RenderImage);
+		RenderImage newImage = *image;
+		newImage.color = color_rnd();
 		ecs_entity_t snake_entity_instance = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
 		ecs_set_id(world_def, snake_entity_instance, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transform_snake);
+		ecs_set_id(world_def, snake_entity_instance, ecs_id(RenderImage), sizeof(RenderImage), &newImage);
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
