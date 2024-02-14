@@ -7,28 +7,30 @@
 //#define NDEBUG
 #include <assert.h>
 
-struct Array
+typedef struct NativeList
 {
 	size_t size;
-	unsigned int capacity;
 	unsigned int count;
+	unsigned int capacity;
 	void* rawData;
-};
+} NativeList;
 
-/** Allocate a new buffer_t with "count" entries of "size" size. */
-inline Array* array_new(size_t size, unsigned int capacity)
+inline static NativeList nav_list_new(size_t size, unsigned int capacity)
 {
-	Array* p = (Array*) malloc(offsetof(Array, rawData) + capacity * size);
+	NativeList list = {0};
 
-	assert(p != NULL);
+	list.rawData = malloc(capacity * size);
 
-    p->size = size;
-    p->count = 0;
-	p->capacity = capacity;
-    return p;
+	assert(list.rawData != NULL);
+
+	list.size = size;
+	list.capacity = capacity;
+	list.count = 0;
+
+    return list;
 }
 
-inline void* array_get(Array* array, int index)
+inline static void* nav_list_get(NativeList* array, int index)
 {
 	assert(index < array->count);
 	assert(index >= 0);
@@ -36,10 +38,36 @@ inline void* array_get(Array* array, int index)
 	return &array->rawData + index * array->size;
 }
 
-inline int array_index_of(Array* array, void* elementData)
+inline static void* array_set(NativeList* array, int index, void* data)
+{
+	void* toSet = &array->rawData + index * array->size;
+	memcpy(toSet, data, array->size);
+}
+
+inline static void* nav_list_add(NativeList* array, void* data)
+{
+	if (array->capacity == array->count)
+	{
+		int newCap = array->capacity * 2;
+		void* data = malloc((array->capacity + 1) * array->capacity);	
+	
+		assert(data != NULL);
+
+		memcpy(data, array->rawData, array->size * array->capacity);
+		free(array->rawData);
+		array->rawData = data;
+	}
+	array->count++;
+	void* toSet = &array->rawData + array->capacity + 1 * array->size;
+
+	array_set(array, array->count, data);
+}
+
+inline static int nav_list_index_of(NativeList* array, void* elementData)
 {
 	void* pointer = &array->rawData;
 	size_t size = array->size;
+
 	for (int i = 0; i < array->count; i++)
 	{
 		if (memcmp(pointer, elementData, size) == 0)
@@ -53,7 +81,7 @@ inline int array_index_of(Array* array, void* elementData)
 	return -1;
 }
 
-inline void array_remove_at_spawn_back(Array* array, int index)
+inline static void nav_list_remove_at_spawn_back(NativeList* array, int index)
 {
 	void* last =  &array->rawData + array->count * array->size;
 	void* toRemove = &array->rawData + index * array->size;
@@ -61,7 +89,5 @@ inline void array_remove_at_spawn_back(Array* array, int index)
 	memcpy(toRemove, last, array->size);
 	array->count--;
 }
-
-
 
 #endif

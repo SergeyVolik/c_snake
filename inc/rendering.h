@@ -2,11 +2,12 @@
 #define GAME_RENDER_H
 
 #include <glad/glad.h>
-#include "LocalTransform.h"
-#include "flecs.h"
-#include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
+
+#include "LocalTransform.h"
+#include "flecs.h"
+#include "collection.h"
 
 typedef struct
 {
@@ -63,6 +64,7 @@ typedef struct RenderImage
 typedef struct ShaderProg
 {
 	GLuint shaderID;
+	
 
 } ShaderProg;
 

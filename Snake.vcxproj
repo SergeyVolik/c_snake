@@ -172,6 +172,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\camera.h" />
+    <ClInclude Include="inc\collection.h" />
     <ClInclude Include="inc\file_helper.h" />
     <ClInclude Include="inc\flecs.h" />
     <ClInclude Include="inc\game_math.h" />

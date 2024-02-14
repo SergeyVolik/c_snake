@@ -95,5 +95,8 @@
     <ClInclude Include="inc\window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="inc\collection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
