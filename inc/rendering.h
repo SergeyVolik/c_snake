@@ -3,7 +3,7 @@
 
 #include <glad/glad.h>
 #include "LocalTransform.h"
-
+#include "flecs.h"
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -54,11 +54,16 @@ typedef struct
 typedef struct RenderImage
 {
 	GLuint texture;
+	ecs_entity_t shader;
+	int renderOrder;
+
 } RenderImage;
+
 
 typedef struct ShaderProg
 {
 	GLuint shaderID;
+
 } ShaderProg;
 
 void rendering_init();
