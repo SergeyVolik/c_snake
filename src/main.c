@@ -29,16 +29,6 @@ typedef struct SnakeHead1
 	Vec2 direction;
 } SnakeHead1;
 
-typedef struct RenderImage
-{
-	GLuint texture;
-} RenderImage;
-
-typedef struct ShaderProg
-{
-	GLuint shaderID;
-} ShaderProg;
-
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 static void glfw_error_callback(int error, const char* description);
@@ -54,7 +44,6 @@ void player_move(ecs_iter_t* it);
 void cleanup_render_data(ecs_iter_t* it);
 void delete_entity_sys(ecs_iter_t* it);
 void draw_obj(LocalTransfrom* trans, RenderData* renderData);
-ShaderProg shader_create(const char* vert_path, const char* fragm_path);
 
 int targetFPS = 144;
 
@@ -281,29 +270,6 @@ int main(int argc, char* argv[])
 	ecs_fini(world_def);
 
 	exit(EXIT_SUCCESS);
-}
-
-ShaderProg shader_create(const char* vert_path, const char* fragm_path)
-{
-	ShaderProg shader;
-	GLuint vertex_shader, fragment_shader;
-
-	//create shader prog
-	log_info("read vertex_shader");
-	vertex_shader = shader_load_from_file(vert_path, GL_VERTEX_SHADER);
-	log_info("read fragment_shader");
-	fragment_shader = shader_load_from_file(fragm_path, GL_FRAGMENT_SHADER);
-
-	log_info("glCreateProgram");
-	shader.shaderID = glCreateProgram();
-	glAttachShader(shader.shaderID, vertex_shader);
-	glAttachShader(shader.shaderID, fragment_shader);
-	glLinkProgram(shader.shaderID);
-
-	glDeleteShader(vertex_shader);
-	glDeleteShader(fragment_shader);
-
-	return shader;
 }
 
 void render_view_system(ecs_iter_t* it) {

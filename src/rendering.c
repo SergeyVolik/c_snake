@@ -1,8 +1,11 @@
-#include "rendering.h"
 #include <stdio.h>
-#include "game_math.h"
 #include <stdlib.h>
 #include <stdbool.h>
+
+#include "rendering.h"
+#include "log.h"
+#include "game_math.h"
+#include "file_helper.h"
 
 void printf_color(Color* color)
 {
@@ -199,4 +202,57 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 
 	data.meshData = mesh;
 	return data;
+}
+
+ShaderProg shader_create(const char* vert_path, const char* fragm_path)
+{
+	ShaderProg shader;
+	GLuint vertex_shader, fragment_shader;
+
+	//create shader prog
+	log_info("read vertex_shader");
+	vertex_shader = shader_load_from_file(vert_path, GL_VERTEX_SHADER);
+	log_info("read fragment_shader");
+	fragment_shader = shader_load_from_file(fragm_path, GL_FRAGMENT_SHADER);
+
+	log_info("glCreateProgram");
+	shader.shaderID = glCreateProgram();
+	glAttachShader(shader.shaderID, vertex_shader);
+	glAttachShader(shader.shaderID, fragment_shader);
+	glLinkProgram(shader.shaderID);
+
+	glDeleteShader(vertex_shader);
+	glDeleteShader(fragment_shader);
+
+	return shader;
+}
+
+GLuint shader_load_from_text(char* shader_text, GLenum shader_type)
+{
+	GLuint shader = glCreateShader(shader_type);
+	glShaderSource(shader, 1, &shader_text, NULL);
+	glCompileShader(shader);
+
+	GLuint ok;
+
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &ok);
+
+	if (!ok)
+	{
+		GLchar log[2000];
+		glGetShaderInfoLog(shader, 2000, NULL, log);
+		printf("%s\n", log);
+	}
+
+	return shader;
+}
+
+GLuint shader_load_from_file(char* shader_path, GLenum shader_type)
+{
+	char* shader_text = file_read_all_text(shader_path);
+	GLuint shader = shader_load_from_text(shader_text, shader_type);
+	log_info("free file text");
+	free(shader_text);
+
+	return shader;
 }
