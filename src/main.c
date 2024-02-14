@@ -15,7 +15,6 @@
 #include "linmath.h"
 #include "log.h"
 
-#include "shader.h"
 #include "image.h" 
 #include "game_time.h"
 #include "game_math.h"
@@ -34,7 +33,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 static void glfw_error_callback(int error, const char* description);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void GLFW_init();
-void init_OpenGL();
+
 GLFWwindow* window_create(char* title);
 void render_object_system(ecs_iter_t* it);
 void render_view_system(ecs_iter_t* it);
@@ -53,8 +52,6 @@ const char* vert_shader_2_path = "./resources/shaders/vert_shader2.vert";
 const char* framg_shader_2_path = "./resources/shaders/fragm_shader2.frag";
 const char* tga_image_path = "./resources/dwsample-tga-640.tga";
 const char* png_image_path = "./resources/test.png";
-
-
 
 GLFWwindow* window;
 ShaderProg shader_program;
@@ -119,8 +116,6 @@ int main(int argc, char* argv[])
 	ECS_SYSTEM(world_def, update_camera_matrix, EcsOnUpdate, CameraViewProj, [in] CameraSetting, [in] LocalTransfrom);
 	ECS_SYSTEM(world_def, player_move, EcsOnUpdate, LocalTransfrom, CameraSetting);
 	
-
-	
 	ecs_entity_t test_sys = ecs_system(world_def, {
 		.entity = ecs_entity(world_def, { /* ecs_entity_desc_t */
 		.name = "setup_render_buffer_system",
@@ -165,7 +160,7 @@ int main(int argc, char* argv[])
 	window = window_create(app_name);
 
 	log_info("init_OpenGL");
-	init_OpenGL();
+	rendering_init();
 
 	log_info("load_resources");
 
@@ -571,15 +566,4 @@ GLFWwindow* window_create(char* title)
 	glfwSwapInterval(1);
 	log_info("Window Created");
 	return window;
-}
-
-void init_OpenGL()
-{
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }

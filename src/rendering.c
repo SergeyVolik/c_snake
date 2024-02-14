@@ -204,6 +204,17 @@ EBOBuffer create_element_array_buffer(MeshData mesh)
 	return data;
 }
 
+void rendering_init()
+{
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
 ShaderProg shader_create(const char* vert_path, const char* fragm_path)
 {
 	ShaderProg shader;

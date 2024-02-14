@@ -27,9 +27,6 @@
     <ClCompile Include="src\image.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\shader.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\file_helper.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -63,9 +60,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="inc\log.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="inc\image.h">
