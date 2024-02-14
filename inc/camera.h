@@ -3,10 +3,11 @@
 
 #include "flecs.h"
 #include "linmath.h"
+#include <stdbool.h>
 
 typedef struct CameraSetting
 {
-	int persMode;
+	bool persMode;
 
 	float orthoSize;
 

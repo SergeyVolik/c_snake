@@ -166,3 +166,28 @@ void log_log(int level, const char* file, int line, const char* fmt, ...) {
 
     unlock();
 }
+
+//custom code
+const char* log_file_name = "log.txt";
+const char* log_file_mode = "w";
+
+void logger_init()
+{
+    log_file_ptr = fopen(log_file_name, log_file_mode);
+
+    if (log_file_ptr == NULL)
+    {
+
+        return;
+    }
+    log_info("log linked to file: %s", log_file_name);
+    log_add_fp(log_file_ptr, 0);
+}
+
+void logger_free()
+{
+    if (log_file_ptr == NULL)
+        return;
+
+    fclose(log_file_ptr);
+}

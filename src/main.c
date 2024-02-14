@@ -39,8 +39,7 @@ typedef struct ShaderProg
 	GLuint shaderID;
 } ShaderProg;
 
-void logger_init();
-void logger_free();
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 static void glfw_error_callback(int error, const char* description);
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
@@ -66,9 +65,7 @@ const char* framg_shader_2_path = "./resources/shaders/fragm_shader2.frag";
 const char* tga_image_path = "./resources/dwsample-tga-640.tga";
 const char* png_image_path = "./resources/test.png";
 
-FILE* log_file_ptr;
-const char* log_file_name = "log.txt";
-const char* log_file_mode = "w";
+
 
 GLFWwindow* window;
 ShaderProg shader_program;
@@ -95,6 +92,21 @@ ECS_COMPONENT_DECLARE(RenderImage);
 
 ECS_TAG_DECLARE(Camera);
 ECS_TAG_DECLARE(DeleteTag);
+
+ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab);
+ecs_world_t* world_default();
+
+ecs_world_t* world_default()
+{
+	return world_def;
+}
+
+ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab)
+{
+	ecs_entity_t instance = ecs_new_w_pair(world, EcsIsA, prefab);
+
+	return instance;
+}
 
 int main(int argc, char* argv[])
 {
@@ -226,9 +238,7 @@ int main(int argc, char* argv[])
 	ecs_set_id(world_def, snake_entity_prefab, ecs_id(SnakeHead1), sizeof(SnakeHead1), &snakeHead);
 	ecs_set_id(world_def, snake_entity_prefab, ecs_id(RenderImage), sizeof(RenderImage), &img);
 
-	ecs_entity_t snake_entity_instance = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
-	ecs_entity_t snake_entity_instance2 = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
-	ecs_entity_t snake_entity_instance3 = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
+	ecs_entity_t snake_entity_instance = prefab_instantiate(world_default(), snake_entity_prefab);
 
 	char window_title[50] = "";
 
@@ -328,7 +338,6 @@ void setup_render_buffer_system(ecs_iter_t* it) {
 	}
 }
 
-
 void delete_entity_sys(ecs_iter_t* it) {
 
 	for (size_t i = 0; i < it->count; i++)
@@ -409,7 +418,7 @@ void update_camera_matrix(ecs_iter_t* it) {
 	{
 		CameraViewProj* data = &view_proj[i];
 
-		if (sett[i].persMode == 0)
+		if (sett[i].persMode == false)
 		{
 			float otrhoFacotr = sett[i].orthoSize;
 
@@ -474,27 +483,6 @@ void player_move(ecs_iter_t* it) {
 			vec3_sub(&trans[i].position, &trans[i].position, &vec);
 		}
 	}
-}
-
-void logger_init()
-{
-	log_file_ptr = fopen(log_file_name, log_file_mode);
-
-	if (log_file_ptr == NULL)
-	{
-
-		return;
-	}
-	log_info("log linked to file: %s", log_file_name);
-	log_add_fp(log_file_ptr, 0);
-}
-
-void logger_free()
-{
-	if (log_file_ptr == NULL)
-		return;
-
-	fclose(log_file_ptr);
 }
 
 static void glfw_error_callback(int error, const char* description)
