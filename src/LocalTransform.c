@@ -13,6 +13,14 @@ LocalTransfrom transform_default()
 	return tran;
 }
 
+LocalTransfrom transform_pos(Vec3 pos)
+{
+	LocalTransfrom tran = transform_default();
+	tran.position = pos;
+	return tran;
+}
+
+
 void printf_mat4x4(mat4x4 mat)
 {
 	printf("matrix:\n");

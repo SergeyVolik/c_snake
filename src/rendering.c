@@ -221,9 +221,9 @@ ShaderProg shader_create(const char* vert_path, const char* fragm_path)
 	GLuint vertex_shader, fragment_shader;
 
 	//create shader prog
-	log_info("read vertex_shader");
+	//log_info("read vertex_shader");
 	vertex_shader = shader_load_from_file(vert_path, GL_VERTEX_SHADER);
-	log_info("read fragment_shader");
+	//log_info("read fragment_shader");
 	fragment_shader = shader_load_from_file(fragm_path, GL_FRAGMENT_SHADER);
 
 	log_info("glCreateProgram");
@@ -262,7 +262,7 @@ GLuint shader_load_from_file(char* shader_path, GLenum shader_type)
 {
 	char* shader_text = file_read_all_text(shader_path);
 	GLuint shader = shader_load_from_text(shader_text, shader_type);
-	log_info("free file text");
+	//log_info("free file text");
 	free(shader_text);
 
 	return shader;

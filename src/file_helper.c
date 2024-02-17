@@ -13,7 +13,7 @@ char* file_read_all_text(char* path)
 	FILE* fp;
 	long lSize;
 	char* buffer;
-	log_info("read_file");
+	//log_info("read_file");
 	fp = fopen(path, "rb");
 	if (!fp)
 	{
@@ -48,8 +48,8 @@ char* file_read_all_text(char* path)
 	}
 
 	/* do your work here, buffer is a string contains the whole text */
-	log_info("content: %s", buffer);
-	log_info("close file");
+	//log_info("content: %s", buffer);
+	//log_info("close file");
 	fclose(fp);
 
 	return buffer;

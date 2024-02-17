@@ -1,5 +1,6 @@
 #ifndef COLLECTION_SV_H
 #define COLLECTION_SV_H
+
 #include <stdlib.h>
 #define _CRT_SECURE_DEPRECATE_MEMORY
 #include <memory.h>
@@ -7,75 +8,125 @@
 //#define NDEBUG
 #include <assert.h>
 
+typedef struct NativeListData
+{
+	int count;
+	int capacity;
+	int element_size;
+	void* rawData;
+} NativeListData;
+
 typedef struct NativeList
 {
-	size_t size;
-	unsigned int count;
-	unsigned int capacity;
-	void* rawData;
+	NativeListData* data;
+
 } NativeList;
 
-inline static NativeList nav_list_new(size_t size, unsigned int capacity)
+typedef struct NativeListIter
+{
+	NativeList* list;
+	int current_index;
+
+} NativeListIter;
+
+inline static bool nav_list_iter_next(NativeListIter* iter);
+inline static NativeListIter nav_list_iter(NativeList* list);
+inline static void* nav_list_iter_get(NativeListIter* iter);
+inline static NativeList nav_list_new(int element_size, int capacity);
+inline static void* nav_list_get_item(NativeList* array, int index);
+inline static void nav_list_set(NativeList* array, int index, void* data);
+inline static void nav_list_add(NativeList* array, void* data);
+inline static int nav_list_index_of(NativeList* array, void* elementData);
+inline static void nav_list_free(NativeList* array);
+inline static void nav_list_remove_at_spawn_back(NativeList* array, int index);
+inline static void* nav_array_get(NativeList* list);
+
+inline static NativeListIter nav_list_iter(NativeList* list)
+{
+	NativeListIter iter = { .list = list, .current_index = -1 };
+
+	return iter;
+}
+
+inline static bool nav_list_iter_next(NativeListIter* iter)
+{
+	if (iter->current_index == iter->list->data->count-1)
+	{
+		return false;
+	}
+
+	iter->current_index++;
+
+	return true;
+}
+
+inline static void* nav_list_iter_get(NativeListIter* iter)
+{
+	return nav_list_get_item(iter->list, iter->current_index);
+}
+
+inline static NativeList nav_list_new(int element_size, int capacity)
 {
 	NativeList list = {0};
 
-	list.rawData = malloc(capacity * size);
+	list.data = malloc(sizeof(NativeListData));
+	list.data->rawData = malloc(capacity * element_size);
+	assert(list.data != NULL);
+	assert(list.data->rawData);
+	list.data->element_size = element_size;
+	list.data->capacity = capacity;
+	list.data->count = 0;
 
-	assert(list.rawData != NULL);
-
-	list.size = size;
-	list.capacity = capacity;
-	list.count = 0;
-
-    return list;
+	return list;
 }
 
-inline static void* nav_list_get(NativeList* array, int index)
+inline static void* nav_array_get(NativeList* list)
 {
-	assert(index < array->count);
-	assert(index >= 0);
-
-	return &array->rawData + index * array->size;
+	return list->data->rawData;
 }
 
-inline static void* array_set(NativeList* array, int index, void* data)
+inline static void* nav_list_get_item(NativeList* array, int index)
 {
-	void* toSet = &array->rawData + index * array->size;
-	memcpy(toSet, data, array->size);
+	//assert(index >= 0);
+	//assert(index <= array->count - 1);
+
+	return ((char*)array->data->rawData) + index * (array->data->element_size);
 }
 
-inline static void* nav_list_add(NativeList* array, void* data)
+inline static void nav_list_set(NativeList* array, int index, void* data)
 {
-	if (array->capacity == array->count)
+	void* toSet = ((char*)array->data->rawData) + index * array->data->element_size;
+	memcpy(toSet, data, array->data->element_size);
+}
+
+inline static void nav_list_add(NativeList* array, void* data)
+{
+	if (array->data->capacity == array->data->count)
 	{
-		int newCap = array->capacity * 2;
-		void* data = malloc((array->capacity + 1) * array->capacity);	
-	
-		assert(data != NULL);
-
-		memcpy(data, array->rawData, array->size * array->capacity);
-		free(array->rawData);
-		array->rawData = data;
+		array->data->capacity *= 2;
+		int newSize = array->data->capacity * array->data->element_size;
+		void* new_array = realloc(array->data->rawData, newSize);
+		assert(new_array != NULL);
+		array->data->rawData = new_array;
 	}
-	array->count++;
-	void* toSet = &array->rawData + array->capacity + 1 * array->size;
 
-	array_set(array, array->count, data);
+	nav_list_set(array, array->data->count, data);
+	array->data->count++;
 }
 
 inline static int nav_list_index_of(NativeList* array, void* elementData)
 {
-	void* pointer = &array->rawData;
-	size_t size = array->size;
+	char* pointer = (char*)array->data->rawData;
+	size_t size = array->data->element_size;
 
-	for (int i = 0; i < array->count; i++)
+	for (int i = 0; i < array->data->count; i++)
 	{
 		if (memcmp(pointer, elementData, size) == 0)
 		{
 			return i;
 		}
 
-		pointer = &pointer + size;
+		pointer = pointer + size;
 	}
 
 	return -1;
@@ -83,15 +134,20 @@ inline static int nav_list_index_of(NativeList* array, void* elementData)
 
 inline static void nav_list_free(NativeList* array)
 {
-	free(array->rawData);
+	if (array->data == NULL)
+		return;
+
+	free(array->data->rawData);
+	free(array->data);
 }
+
 inline static void nav_list_remove_at_spawn_back(NativeList* array, int index)
 {
-	void* last =  &array->rawData + array->count * array->size;
-	void* toRemove = &array->rawData + index * array->size;
+	void* last = ((char*)array->data->rawData) + array->data->count * array->data->element_size;
+	void* toRemove = ((char*)array->data->rawData) + index * array->data->element_size;
 
-	memcpy(toRemove, last, array->size);
-	array->count--;
+	memcpy(toRemove, last, array->data->element_size);
+	array->data->count--;
 }
 
 #endif

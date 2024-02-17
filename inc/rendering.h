@@ -61,13 +61,18 @@ typedef struct RenderImage
 
 } RenderImage;
 
-
 typedef struct ShaderProg
 {
 	GLuint shaderID;
-
+	int shaderOrder;
 
 } ShaderProg;
+
+typedef struct ShaderArray
+{
+	NativeList list;
+
+} ShaderArray;
 
 typedef struct ShaderRenderOrderData
 {
@@ -78,23 +83,67 @@ typedef struct ShaderRenderOrderData
 
 typedef struct ShaderRenderArray
 {
-	NativeList data;
+	NativeList* data;
 
 } ShaderRenderArray;
 
-static int compare(const void* a, const void* b)
+static int shader_array_compare(const void* a, const void* b)
 {
-	int int_a = ((ShaderRenderOrderData*)a)->renderOrder;
-	int int_b = ((ShaderRenderOrderData*)b)->renderOrder;
+	ShaderProg* l = ((ShaderProg*)a);
+	ShaderProg* r = ((ShaderProg*)b);
 
-	if (int_a == int_b) return 0;
-	else if (int_a < int_b) return -1;
-	else return 1;
+	return (l->shaderOrder - r->shaderOrder);
 }
 
-inline static void render_array_sort(ShaderRenderArray array)
+static int comapre_int(const void* a, const void* b)
 {
-	qsort(array.data.rawData, array.data.count, array.data.size, compare);
+	int l = *((int*)a);
+	int r = *((int*)b);
+
+	return (l - r);
+}
+
+inline static void shader_array_sort(ShaderArray* array)
+{	
+	/*log_info("sort size = %i", array->data.data->count);
+	void* data = array->data.data;
+	qsort(data, array->data.data->count, array->data.data->element_size, shader_array_compare);*/
+
+	NativeListIter iter = nav_list_iter(&array->list);
+	printf("shader order: ");
+	while (nav_list_iter_next(&iter))
+	{
+		printf("%i,", ((ShaderProg*)nav_list_iter_get(&iter))->shaderOrder);
+	}
+
+	printf("\n");
+
+	qsort(array->list.data->rawData, 2, sizeof(ShaderProg), shader_array_compare);
+
+	printf("shader order: ");
+
+	iter = nav_list_iter(&array->list);
+
+	while (nav_list_iter_next(&iter))
+	{
+		printf("%i,", ((ShaderProg*)nav_list_iter_get(&iter))->shaderOrder);
+	}
+
+	printf("\n");
+}
+
+static int render_array_compare(const void* a, const void* b)
+{
+	int l = ((ShaderRenderOrderData*)a)->renderOrder;
+	int r = ((ShaderRenderOrderData*)b)->renderOrder;
+
+	return (l - r);
+}
+
+inline static void render_array_sort(ShaderRenderArray* array)
+{
+	//_qsort(array->data->rawData, array->data->element_size, 0, array->data->count, render_array_compare);
+	//qsort(array->data->rawData, array->data->count, array->data->element_size, render_array_compare);
 }
 
 void rendering_init();

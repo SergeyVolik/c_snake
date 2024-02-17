@@ -23,6 +23,7 @@
 #include "rendering.h"
 #include "LocalTransform.h"
 #include "camera.h"
+#include "collection.h"
 
 //ecs systems
 void render_object_system(ecs_iter_t* it);
@@ -31,6 +32,13 @@ void update_camera_matrix(ecs_iter_t* it);
 void player_move(ecs_iter_t* it);
 void cleanup_render_data(ecs_iter_t* it);
 void delete_entity_sys(ecs_iter_t* it);
+void render_clear_system(ecs_iter_t* it);
+
+ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab, char* name);
+ecs_world_t* world_default();
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void define_ecs(int argc, char* argv[]);
 
 int targetFPS = 144;
 
@@ -63,84 +71,20 @@ ECS_COMPONENT_DECLARE(LocalTransfrom);
 ECS_COMPONENT_DECLARE(RenderData);
 ECS_COMPONENT_DECLARE(RenderImage);
 ECS_COMPONENT_DECLARE(ShaderProg);
+ECS_COMPONENT_DECLARE(ShaderRenderArray);
+ECS_COMPONENT_DECLARE(ShaderArray);
+
 
 ECS_TAG_DECLARE(Camera);
 ECS_TAG_DECLARE(DeleteTag);
 ECS_TAG_DECLARE(ShaderTag);
 
-ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab, char* name);
-ecs_world_t* world_default();
-
-ecs_world_t* world_default()
-{
-	return world_def;
-}
-
-ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab, char* name)
-{
-	ecs_entity_t inst = ecs_new_entity(world, name);
-	ecs_add_pair(world, inst, EcsIsA, prefab);
-
-	return inst;
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void render_clear_system(ecs_iter_t* it);
 ShaderProg shader_program;
+ecs_entity_t shader_array_e;
 
 int main(int argc, char* argv[])
 {
-	world_def = ecs_init_w_args(argc, argv);
-
-	// Start REST API with default parameters
-	ecs_singleton_set(world_def, EcsRest, { 0 });
-
-	ECS_IMPORT(world_def, FlecsMonitor);
-
-	ECS_COMPONENT_DEFINE(world_def, CameraSetting);
-	ECS_COMPONENT_DEFINE(world_def, CameraViewProj);
-	ECS_COMPONENT_DEFINE(world_def, LocalTransfrom);
-	ECS_COMPONENT_DEFINE(world_def, RenderData);
-	ECS_COMPONENT_DEFINE(world_def, RenderImage);
-	ECS_COMPONENT_DEFINE(world_def, ShaderProg);
-
-
-	ECS_TAG_DEFINE(world_def, ShaderTag);
-	ECS_TAG_DEFINE(world_def, Camera);
-	ECS_TAG_DEFINE(world_def, DeleteTag);
-
-	ECS_SYSTEM(world_def, update_camera_matrix, EcsOnUpdate, CameraViewProj, [in] CameraSetting, [in] LocalTransfrom);
-	ECS_SYSTEM(world_def, player_move, EcsOnUpdate, LocalTransfrom, CameraSetting);
-
-	ecs_entity_t test_sys = ecs_system(world_def, {
-		.entity = ecs_entity(world_def, { /* ecs_entity_desc_t */
-		.name = "setup_render_buffer_system",
-		.add = { ecs_dependson(EcsOnUpdate) }
-		}),
-		.query.filter.terms = {
-			{ecs_id(RenderImage),.oper = EcsAnd },
-			{ecs_id(RenderData),.oper = EcsNot   },
-		},
-		.callback = setup_render_buffer_system
-		});
-	ECS_SYSTEM(world_def, render_clear_system, EcsOnUpdate, 0);
-	ECS_SYSTEM(world_def, render_object_system, EcsOnUpdate, ShaderProg);
-
-	//cleanup
-	ECS_SYSTEM(world_def, cleanup_render_data, EcsOnUpdate, RenderData, DeleteTag);
-	ECS_SYSTEM(world_def, delete_entity_sys, EcsOnUpdate, DeleteTag);
-
-	//manula sys creation
-	//ecs_entity_t test_sys = ecs_system(world, {
-	//	.query.filter.terms = {
-	//		{ecs_id(Comp),.oper = EcsAnd },
-	//		{ecs_id(Comp),.oper = EcsOr   },
-	//		{ecs_id(Comp), .oper = EcsNot  },
-	//		{ecs_id(Comp), .oper = EcsOptional   },
-	//	},
-	//	.callback = sys_name
-	//});
+	define_ecs(argc, argv);
 
 	camera_entity = init_camera(world_def);
 
@@ -190,15 +134,31 @@ int main(int argc, char* argv[])
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, defTextWidth, defTextHeigh, 0, GL_RGBA, GL_FLOAT, defaultTextureData);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
+	shader_array_e = ecs_new(world_def, ShaderArray);
+
+	ShaderArray shader_array = {0};
+
+	shader_array.list = nav_list_new(sizeof(ShaderProg), 3);
 	shader_program = shader_create(vert_shader_default_path, framg_shader_default_path);
+	shader_program.shaderOrder = 1000;
+	
+	nav_list_add(&shader_array.list, &shader_program);
+
 	ecs_entity_t shader2 = ecs_new(world_def, ShaderProg);
 	ecs_set_id(world_def, shader2, ecs_id(ShaderProg), sizeof(ShaderProg), &shader_program);
 	ecs_set_name(world_def, shader2, "shader2");
 
 	ShaderProg shaderProgram2 = shader_create(vert_shader_2_path, framg_shader_2_path);
+	shaderProgram2.shaderOrder = 100;
+
 	ecs_entity_t shader1 = ecs_new(world_def, ShaderProg);
 	ecs_set_name(world_def, shader1, "shader1");
 	ecs_set_id(world_def, shader1, ecs_id(ShaderProg), sizeof(ShaderProg), &shaderProgram2);
+
+	nav_list_add(&shader_array.list, &shaderProgram2);
+
+	shader_array_sort(&shader_array);
+	ecs_set_id(world_def, shader_array_e, ecs_id(ShaderArray), sizeof(ShaderArray), &shader_array);
 
 	modelLoc = glGetUniformLocation(shader_program.shaderID, "model");
 	viewLoc = glGetUniformLocation(shader_program.shaderID, "view");
@@ -208,7 +168,7 @@ int main(int argc, char* argv[])
 	LocalTransfrom img_transform = transform_default();
 
 	img_transform.position.x = 1.0f;
-	RenderImage img2 = { .texture = png_g_texture, .color = color_blue() };
+	RenderImage img2 = { .texture = png_g_texture, .color = color_blue(), .renderOrder = 1 };
 	img2.shader = shader2;
 	ecs_entity_t reward_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
 
@@ -218,13 +178,14 @@ int main(int argc, char* argv[])
 	ecs_set_name(world_def, reward_entity_prefab, "reward prefab");
 	
 	snake_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
-	RenderImage img = { .texture = g_texture, .color = color_green()};
+	RenderImage img = { .texture = g_texture, .color = color_green(), .renderOrder = 0 };
 	img.shader = shader2;
 	LocalTransfrom transform_snake = transform_default();
 	ecs_set_id(world_def, snake_entity_prefab, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transform_snake);
 	ecs_set_id(world_def, snake_entity_prefab, ecs_id(RenderImage), sizeof(RenderImage), &img);
 	ecs_set_name(world_def, snake_entity_prefab, "shake prefab");
 
+	//instantiate
 	ecs_entity_t snake_entity_instance = prefab_instantiate(world_default(), snake_entity_prefab, "snake");
 	ecs_entity_t reward_inst = prefab_instantiate(world_default(), reward_entity_prefab, "reward");
 	
@@ -300,18 +261,19 @@ void render_object_system(ecs_iter_t* it) {
 	ECS_COMPONENT(it->world, CameraViewProj);
 
 	CameraViewProj* cam_view_proj = ecs_get_mut(it->world, camera_entity, CameraViewProj);
+	ShaderArray* shader_array = ecs_get_mut(it->world, shader_array_e, ShaderArray);
 
-	//glClearColor(0, 0, 0, 1.0f);
-	//glClear(GL_COLOR_BUFFER_BIT);
+	/*glClearColor(0, 0, 0, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);*/
 
 	AppTime time = app_time_get();
 
 	ShaderProg* shaders = ecs_field(it, ShaderProg, 1);
-	log_info("Start render time: %f", time.total_time);
+
 	for (int i = 0; i < it->count; i++)
 	{
 		ecs_entity_t shader_e = it->entities[i];
-		log_info(ecs_get_name(it->world, shader_e));
+
 		ShaderProg* shader = &shaders[i];
 		int32_t index = 0;
 		ecs_entity_t renderEntity;
@@ -323,15 +285,6 @@ void render_object_system(ecs_iter_t* it) {
 
 		while (renderEntity = ecs_get_target(it->world, shader_e, ShaderTag, index++))
 		{
-			log_info("draw item");
-			//log_info(ecs_get_name(it->world, renderEntity));
-		
-			//if (false == ecs_has_id(it->world, renderEntity, EcsPrefab))
-			//{
-			//	log_info("is a prefab");
-			//	continue;
-			//}
-
 			if (false == ecs_has_id(it->world, renderEntity, ecs_id(RenderData)))
 			{				
 				log_info("No render data");
@@ -365,9 +318,76 @@ void render_object_system(ecs_iter_t* it) {
 				glDrawArrays(GL_TRIANGLES, 0, renderData->renderBuffer.meshData.verticesLen);
 			}
 		}
-		log_info("End render");
-
+		//log_info("End render");
 	}
+}
+
+ecs_world_t* world_default()
+{
+	return world_def;
+}
+
+ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab, char* name)
+{
+	ecs_entity_t inst = ecs_new_entity(world, name);
+	ecs_add_pair(world, inst, EcsIsA, prefab);
+
+	return inst;
+}
+
+void define_ecs(int argc, char* argv[])
+{
+	world_def = ecs_init_w_args(argc, argv);
+
+	// Start REST API with default parameters
+	ecs_singleton_set(world_def, EcsRest, { 0 });
+
+	ECS_IMPORT(world_def, FlecsMonitor);
+
+	ECS_COMPONENT_DEFINE(world_def, CameraSetting);
+	ECS_COMPONENT_DEFINE(world_def, CameraViewProj);
+	ECS_COMPONENT_DEFINE(world_def, LocalTransfrom);
+	ECS_COMPONENT_DEFINE(world_def, RenderData);
+	ECS_COMPONENT_DEFINE(world_def, RenderImage);
+	ECS_COMPONENT_DEFINE(world_def, ShaderProg);
+	ECS_COMPONENT_DEFINE(world_def, ShaderRenderArray);
+	ECS_COMPONENT_DEFINE(world_def, ShaderArray);
+
+	ECS_TAG_DEFINE(world_def, ShaderTag);
+	ECS_TAG_DEFINE(world_def, Camera);
+	ECS_TAG_DEFINE(world_def, DeleteTag);
+
+	ECS_SYSTEM(world_def, update_camera_matrix, EcsOnUpdate, CameraViewProj, [in] CameraSetting, [in] LocalTransfrom);
+	ECS_SYSTEM(world_def, player_move, EcsOnUpdate, LocalTransfrom, CameraSetting);
+
+	ecs_entity_t test_sys = ecs_system(world_def, {
+		.entity = ecs_entity(world_def, { /* ecs_entity_desc_t */
+		.name = "setup_render_buffer_system",
+		.add = { ecs_dependson(EcsOnUpdate) }
+		}),
+		.query.filter.terms = {
+			{ecs_id(RenderImage),.oper = EcsAnd },
+			{ecs_id(RenderData),.oper = EcsNot   },
+		},
+		.callback = setup_render_buffer_system
+		});
+	ECS_SYSTEM(world_def, render_clear_system, EcsOnUpdate, 0);
+	ECS_SYSTEM(world_def, render_object_system, EcsOnUpdate, ShaderProg);
+
+	//cleanup
+	ECS_SYSTEM(world_def, cleanup_render_data, EcsOnUpdate, RenderData, DeleteTag);
+	ECS_SYSTEM(world_def, delete_entity_sys, EcsOnUpdate, DeleteTag);
+
+	//manula sys creation
+	//ecs_entity_t test_sys = ecs_system(world, {
+	//	.query.filter.terms = {
+	//		{ecs_id(Comp),.oper = EcsAnd },
+	//		{ecs_id(Comp),.oper = EcsOr   },
+	//		{ecs_id(Comp), .oper = EcsNot  },
+	//		{ecs_id(Comp), .oper = EcsOptional   },
+	//	},
+	//	.callback = sys_name
+	//});
 }
 
 void cleanup_render_data(ecs_iter_t* it) {
@@ -473,17 +493,23 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 	{
 		log_info("create");
 
-		LocalTransfrom transform_snake = transform_default();
+		int spawn_number = 100;
 
-		transform_snake.position.x = random_float(-6, 6);
-		transform_snake.position.y = random_float(-6, 6);
+		for (size_t i = 0; i < spawn_number; i++)
+		{
+			LocalTransfrom transform_snake = transform_default();
 
-		RenderImage* image = ecs_get(world_def, snake_entity_prefab, RenderImage);
-		RenderImage newImage = *image;
-		newImage.color = color_rnd();
-		ecs_entity_t snake_entity_instance = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
-		ecs_set_id(world_def, snake_entity_instance, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transform_snake);
-		ecs_set_id(world_def, snake_entity_instance, ecs_id(RenderImage), sizeof(RenderImage), &newImage);
+			transform_snake.position.x = random_float(-6, 6);
+			transform_snake.position.y = random_float(-6, 6);
+
+			RenderImage* image = ecs_get(world_def, snake_entity_prefab, RenderImage);
+			RenderImage newImage = *image;
+			newImage.color = color_rnd();
+			ecs_entity_t snake_entity_instance = ecs_new_w_pair(world_def, EcsIsA, snake_entity_prefab);
+			ecs_set_id(world_def, snake_entity_instance, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transform_snake);
+			ecs_set_id(world_def, snake_entity_instance, ecs_id(RenderImage), sizeof(RenderImage), &newImage);
+		}
+		
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)

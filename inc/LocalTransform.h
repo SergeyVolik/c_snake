@@ -36,6 +36,8 @@ void transform_set_position(LocalTransfrom* trans, Vec3 pos);
 Vec3 transform_get_position(LocalTransfrom* trans);
 
 LocalTransfrom transform_default();
+LocalTransfrom transform_pos(Vec3 pos);
+
 void printf_mat4x4(mat4x4 mat);
 
 #endif
