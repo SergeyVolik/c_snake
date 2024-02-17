@@ -1,15 +1,15 @@
-2024-02-17 14:46:39 INFO  E:\c_snake\src\window.c:86: Error: The GLFW library is not initialized
-2024-02-17 14:46:39 INFO  E:\c_snake\src\window.c:86: Error: The GLFW library is not initialized
-2024-02-17 14:46:39 INFO  E:\c_snake\src\window.c:53: glfwCreateWindow
-2024-02-17 14:46:39 INFO  E:\c_snake\src\window.c:69: Window Created
-2024-02-17 14:46:39 INFO  E:\c_snake\src\main.c:102: init_OpenGL
-2024-02-17 14:46:39 INFO  E:\c_snake\src\main.c:105: load_resources
-2024-02-17 14:46:39 INFO  E:\c_snake\src\main.c:110: load image file
-2024-02-17 14:46:39 INFO  E:\c_snake\src\main.c:119: create_color_texture
-2024-02-17 14:46:39 INFO  E:\c_snake\src\main.c:124: create textures
-2024-02-17 14:46:39 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-17 14:46:39 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-17 14:46:39 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-17 14:46:39 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
-2024-02-17 14:46:39 INFO  E:\c_snake\src\main.c:241: setup RenderData
-2024-02-17 14:46:39 INFO  E:\c_snake\src\main.c:241: setup RenderData
+2024-02-17 15:45:41 INFO  E:\c_snake\src\window.c:86: Error: The GLFW library is not initialized
+2024-02-17 15:45:41 INFO  E:\c_snake\src\window.c:86: Error: The GLFW library is not initialized
+2024-02-17 15:45:41 INFO  E:\c_snake\src\window.c:53: glfwCreateWindow
+2024-02-17 15:45:41 INFO  E:\c_snake\src\window.c:69: Window Created
+2024-02-17 15:45:41 INFO  E:\c_snake\src\main.c:110: init_OpenGL
+2024-02-17 15:45:41 INFO  E:\c_snake\src\main.c:113: load_resources
+2024-02-17 15:45:41 INFO  E:\c_snake\src\main.c:118: load image file
+2024-02-17 15:45:41 INFO  E:\c_snake\src\main.c:127: create_color_texture
+2024-02-17 15:45:41 INFO  E:\c_snake\src\main.c:132: create textures
+2024-02-17 15:45:41 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-17 15:45:41 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-17 15:45:41 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-17 15:45:41 INFO  E:\c_snake\src\file_helper.c:29:  allocate memory for entire content
+2024-02-17 15:45:41 INFO  E:\c_snake\src\main.c:259: setup RenderData
+2024-02-17 15:45:41 INFO  E:\c_snake\src\main.c:259: setup RenderData

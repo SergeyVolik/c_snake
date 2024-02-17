@@ -25,6 +25,9 @@
 #include "camera.h"
 #include "collection.h"
 
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
 //ecs systems
 void render_object_system(ecs_iter_t* it);
 void setup_render_buffer_system(ecs_iter_t* it);
@@ -84,6 +87,8 @@ ECS_TAG_DECLARE(ShaderTag);
 
 ShaderProg shader_program;
 ecs_entity_t shader_array_e;
+
+ma_engine engine;
 
 int main(int argc, char* argv[])
 {
@@ -193,6 +198,15 @@ int main(int argc, char* argv[])
 
 	sprintf(window_title, app_name, 0);
 
+	ma_result result;
+
+	result = ma_engine_init(NULL, &engine);
+	if (result != MA_SUCCESS) {
+		return -1;
+	}
+
+	ma_engine_play_sound(&engine, sfx_path, NULL);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwGetFramebufferSize(window, &width, &height);
@@ -221,6 +235,7 @@ int main(int argc, char* argv[])
 	stbi_image_free(image_data);
 	ecs_fini(world_def);
 
+	ma_engine_uninit(&engine);
 	exit(EXIT_SUCCESS);
 }
 
@@ -485,7 +500,7 @@ void player_move(ecs_iter_t* it) {
 			Vec3 vec = camera_right;
 			vec3_mul_value(&vec, &vec, speed);
 			vec3_sub(&trans[i].position, &trans[i].position, &vec);
-		}
+		}	
 	}
 }
 
@@ -535,6 +550,11 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 				ecs_add(world_def, it.entities[i], DeleteTag);
 			}
 		}
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+	{
+		ma_engine_play_sound(&engine, sfx_path, NULL);
 	}
 }
 

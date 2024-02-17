@@ -104,5 +104,8 @@
     <ClInclude Include="inc\hashmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="inc\miniaudio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

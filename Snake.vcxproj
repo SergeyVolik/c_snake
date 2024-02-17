@@ -182,6 +182,7 @@
     <ClInclude Include="inc\linmath.h" />
     <ClInclude Include="inc\LocalTransform.h" />
     <ClInclude Include="inc\log.h" />
+    <ClInclude Include="inc\miniaudio.h" />
     <ClInclude Include="inc\rendering.h" />
     <ClInclude Include="inc\stb_image.h" />
     <ClInclude Include="inc\app.h" />
