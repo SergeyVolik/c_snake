@@ -167,6 +167,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\shaders\fragm_shader2.frag" />
+    <None Include="resources\shaders\line.frag" />
+    <None Include="resources\shaders\line.vert" />
     <None Include="resources\shaders\vert_shader2.vert" />
     <None Include="shaders\fragm_shader.frag" />
     <None Include="shaders\vert_shader.vert" />

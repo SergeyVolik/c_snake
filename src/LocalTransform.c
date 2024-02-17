@@ -5,7 +5,7 @@ LocalTransfrom transform_default()
 {
 	LocalTransfrom tran;
 
-	Vec3 pos = { 0,0,0 };
+	float3 pos = { 0,0,0 };
 	tran.position = pos;
 
 	tran.scale = 1.0f;
@@ -13,7 +13,7 @@ LocalTransfrom transform_default()
 	return tran;
 }
 
-LocalTransfrom transform_pos(Vec3 pos)
+LocalTransfrom transform_pos(float3 pos)
 {
 	LocalTransfrom tran = transform_default();
 	tran.position = pos;
@@ -40,12 +40,12 @@ void printf_mat4x4(mat4x4 mat)
 	}
 }
 
-void transform_set_position(LocalTransfrom* trans, Vec3 pos)
+void transform_set_position(LocalTransfrom* trans, float3 pos)
 {
 	trans->position = pos;
 }
 
-Vec3 transform_get_position(LocalTransfrom* trans)
+float3 transform_get_position(LocalTransfrom* trans)
 {
 	return trans->position;
 }

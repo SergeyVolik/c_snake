@@ -60,6 +60,8 @@
     <None Include="shaders\vert_shader.vert" />
     <None Include="resources\shaders\fragm_shader2.frag" />
     <None Include="resources\shaders\vert_shader2.vert" />
+    <None Include="resources\shaders\line.frag" />
+    <None Include="resources\shaders\line.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\linmath.h">

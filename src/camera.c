@@ -35,7 +35,7 @@ ecs_entity_t init_camera(ecs_world_t* world)
 
 	ecs_entity_t camera_entity = camera_create(world, camera_setting);
 	LocalTransfrom* cam_pos = ecs_get_mut(world, camera_entity, LocalTransfrom);
-	Vec3 pos = { 0.0f, 0, 5.0f };
+	float3 pos = { 0.0f, 0, 5.0f };
 	transform_set_position(cam_pos, pos);
 
 	return camera_entity;

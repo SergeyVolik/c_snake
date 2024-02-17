@@ -24,9 +24,7 @@ Color* create_color_texture(int width, int height, Color color)
 	{
 		for (size_t j = 0; j < width; j++)
 		{
-			size_t index = i * height + j;
-
-			textureColorData[index] = color;
+			textureColorData[i * height + j] = color;
 		}
 	}
 
@@ -100,7 +98,7 @@ MeshData create_circle_mesh(int segments)
 	}
 
 	Color color = { 1, 1, 1, 1 };
-	Vec3 center = { 0, 0, 0 };
+	float3 center = { 0, 0, 0 };
 	Vertex vert = { center, color };
 
 	int offset = 0;
@@ -109,10 +107,10 @@ MeshData create_circle_mesh(int segments)
 
 	for (int i = 0; i < len; i += 3)
 	{
-		Vec3 currPos = { sin(a * offset) * l, cos(a * offset) * l, 0 };
+		float3 currPos = { sin(a * offset) * l, cos(a * offset) * l, 0 };
 		Vertex currVert = { currPos, color };
 
-		Vec3 nextPos = { sin(a * (offset + 1)) * l, cos(a * (offset + 1)) * l, 0 };
+		float3 nextPos = { sin(a * (offset + 1)) * l, cos(a * (offset + 1)) * l, 0 };
 		Vertex nextVert = { nextPos, color };
 
 		vertexArray[i] = vert;
@@ -145,6 +143,38 @@ RenderData create_renderer(MeshData mesh, GLuint texture)
 	};
 
 	return data;
+}
+
+LineRenderBuffers create_line_buffer(float3 start, float3 end)
+{
+	float vertices[6] = 
+	{
+		start.x, start.y, start.z,
+		end.x, end.y, end.z,
+	};
+
+	LineRenderBuffers buffers;
+
+	GLuint VAO, VBO;
+
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	buffers.VAO = VAO;
+	buffers.VBO = VBO;
+
+	return buffers;
 }
 
 EBOBuffer create_element_array_buffer(MeshData mesh)
@@ -216,10 +246,8 @@ void rendering_init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-ecs_entity_t shader_create(const char* vert_path, const char* fragm_path, ShaderProg* shader, ecs_world_t* world, char* shaderName)
+GLuint load_shader(const char* vert_path, const char* fragm_path)
 {
-	ECS_COMPONENT(world, ShaderProg);
-
 	GLuint vertex_shader, fragment_shader;
 
 	//create shader prog
@@ -228,14 +256,22 @@ ecs_entity_t shader_create(const char* vert_path, const char* fragm_path, Shader
 	//log_info("read fragment_shader");
 	fragment_shader = shader_load_from_file(fragm_path, GL_FRAGMENT_SHADER);
 
-	shader->shaderID = glCreateProgram();
-	glAttachShader(shader->shaderID, vertex_shader);
-	glAttachShader(shader->shaderID, fragment_shader);
-	glLinkProgram(shader->shaderID);
+	GLuint shaderID = glCreateProgram();
+
+	glAttachShader(shaderID, vertex_shader);
+	glAttachShader(shaderID, fragment_shader);
+	glLinkProgram(shaderID);
 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 
+	return shaderID;
+}
+ecs_entity_t shader_create(const char* vert_path, const char* fragm_path, ShaderProg* shader, ecs_world_t* world, char* shaderName)
+{
+	ECS_COMPONENT(world, ShaderProg);
+
+	shader->shaderID = load_shader(vert_path, fragm_path);
 	ecs_entity_t shader_e = ecs_new(world, ShaderProg);
 	shader->shaderEntity = shader_e;
 

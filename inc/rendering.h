@@ -9,6 +9,7 @@
 #include "flecs.h"
 #include "collection.h"
 #include "game_math.h"
+
 typedef struct
 {
 	float r;
@@ -20,9 +21,9 @@ typedef struct
 
 typedef struct
 {
-	Vec3 vec;
+	float3 vec;
 	Color color;
-	Vec2 uv;
+	float2 uv;
 
 } Vertex;
 
@@ -50,6 +51,13 @@ typedef struct
 	MeshData meshData;
 
 } EBOBuffer;
+
+typedef struct
+{
+	GLuint VBO;
+	GLuint VAO;
+
+} LineRenderBuffers;
 
 typedef struct
 {
@@ -139,8 +147,10 @@ Color* create_color_texture(int width, int height, Color color);
 MeshData create_quad_mesh();
 MeshData create_circle_mesh(int segments);
 EBOBuffer create_element_array_buffer(MeshData mesh);
+LineRenderBuffers create_line_buffer(float3 start, float3 end);
 
 //shader
+GLuint load_shader(const char* vert_path, const char* fragm_path);
 ecs_entity_t shader_create(const char* vert_path, const char* fragm_path, ShaderProg* shader, ecs_world_t* world, char* shaderName);
 GLuint shader_load_from_text(char* shader_text, GLenum shader_type);
 GLuint shader_load_from_file(char* shader_path, GLenum shader_type);

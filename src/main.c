@@ -28,13 +28,49 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 
+typedef struct DrawLine
+{
+	GLuint VBO;
+	GLuint VAO;
+
+	Color color;
+} DrawLine;
+
+typedef struct BoxCollider2D
+{
+	float2 size;
+	float2 offset;
+
+} BoxCollider2D;
+
+typedef struct Lifetime
+{
+	float lifetime;
+	float t;
+
+} Lifetime;
+
+void draw_line(float3 start, float3 end, Color color, float duration);
+
+BoxCollider2D collider_box_default();
+
+BoxCollider2D collider_box_default()
+{
+	BoxCollider2D coll = { .size = {1,1} };	
+	return coll;
+}
+
 //ecs systems
 void render_object_system(ecs_iter_t* it);
 void setup_render_buffer_system(ecs_iter_t* it);
 void update_camera_matrix(ecs_iter_t* it);
 void player_move(ecs_iter_t* it);
 void cleanup_render_data(ecs_iter_t* it);
+void cleanup_line_render_data(ecs_iter_t* it);
 void delete_entity_sys(ecs_iter_t* it);
+void draw_line_system(ecs_iter_t* it);
+void lifetime_sys(ecs_iter_t* it);
+void draw_box_collider(ecs_iter_t* it);
 
 ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab, char* name);
 ecs_world_t* world_default();
@@ -44,6 +80,8 @@ void define_ecs(int argc, char* argv[]);
 
 int targetFPS = 144;
 
+const char* line_vert= "./resources/shaders/line.vert";
+const char* line_frag = "./resources/shaders/line.frag";
 const char* vert_shader_default_path = "./resources/shaders/vert_shader_default.vert";
 const char* framg_shader_default_path = "./resources/shaders/fragm_shader_default.frag";
 const char* vert_shader_2_path = "./resources/shaders/vert_shader2.vert";
@@ -63,9 +101,9 @@ GLuint colorLoc;
 
 ecs_entity_t camera_entity;
 
-Vec3 camera_front = { 0, 0, -1.0f };
-Vec3 camera_up = { 0, 1.0f, 0 };
-Vec3 camera_right = { 1.0f, 0.0f, 0 };
+float3 camera_front = { 0, 0, -1.0f };
+float3 camera_up = { 0, 1.0f, 0 };
+float3 camera_right = { 1.0f, 0.0f, 0 };
 
 ecs_entity_t snake_entity_prefab;
 ecs_world_t* world_def;
@@ -73,7 +111,13 @@ ecs_world_t* world_def;
 ECS_COMPONENT_DECLARE(CameraSetting);
 ECS_COMPONENT_DECLARE(CameraViewProj);
 ECS_COMPONENT_DECLARE(LocalTransfrom);
+ECS_COMPONENT_DECLARE(BoxCollider2D);
+
 ECS_COMPONENT_DECLARE(RenderData);
+ECS_COMPONENT_DECLARE(DrawLine);
+ECS_COMPONENT_DECLARE(Lifetime);
+
+
 ECS_COMPONENT_DECLARE(RenderImage);
 ECS_COMPONENT_DECLARE(ShaderProg);
 ECS_COMPONENT_DECLARE(Material);
@@ -144,6 +188,7 @@ int main(int argc, char* argv[])
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, defTextWidth, defTextHeigh, 0, GL_RGBA, GL_FLOAT, defaultTextureData);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
+
 	shader_array_e = ecs_new(world_def, ShaderArray);
 	ecs_entity_t materialE = ecs_new(world_def, Material);
 
@@ -172,7 +217,7 @@ int main(int argc, char* argv[])
 
 	img_transform.position.x = 1.0f;
 	RenderImage img2 = { .texture = png_g_texture, .color = color_blue(), .renderOrder = 1 };
-	img2.shader = shader2;
+	img2.shader = shader1;
 	ecs_entity_t reward_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
 
 	ecs_set_id(world_def, reward_entity_prefab, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &img_transform);
@@ -186,13 +231,17 @@ int main(int argc, char* argv[])
 	RenderImage img = { .texture = g_texture, .color = color_green(), .renderOrder = 0 };
 	img.shader = shader2;
 	LocalTransfrom transform_snake = transform_default();
+
+	BoxCollider2D collider = collider_box_default();
+	collider.size = float2_mul(collider.size, 2);
+	ecs_set_id(world_def, snake_entity_prefab, ecs_id(BoxCollider2D), sizeof(BoxCollider2D), &collider);
 	ecs_set_id(world_def, snake_entity_prefab, ecs_id(LocalTransfrom), sizeof(LocalTransfrom), &transform_snake);
 	ecs_set_id(world_def, snake_entity_prefab, ecs_id(RenderImage), sizeof(RenderImage), &img);
 	ecs_set_name(world_def, snake_entity_prefab, "shake prefab");
 
 	//instantiate
 	ecs_entity_t snake_entity_instance = prefab_instantiate(world_default(), snake_entity_prefab, "snake");
-	ecs_entity_t reward_inst = prefab_instantiate(world_default(), reward_entity_prefab, "reward");
+	//ecs_entity_t reward_inst = prefab_instantiate(world_default(), reward_entity_prefab, "reward");
 	
 	char window_title[50] = "";
 
@@ -239,24 +288,137 @@ int main(int argc, char* argv[])
 	exit(EXIT_SUCCESS);
 }
 
+void draw_line(float3 start, float3 end, Color color, float duration)
+{
+	ecs_world_t *world = world_default();
+	DrawLine line;
+	line.color = color;
+
+	LineRenderBuffers buffers = create_line_buffer(start, end);
+	line.VAO = buffers.VAO;
+	line.VBO = buffers.VBO;
+
+	Lifetime lifetime = { .lifetime = duration };
+	
+	ecs_entity_t drawLineE = ecs_new(world, 0);
+	ecs_set_id(world, drawLineE, ecs_id(DrawLine), sizeof(DrawLine), &line);
+	ecs_set_id(world, drawLineE, ecs_id(Lifetime), sizeof(Lifetime), &lifetime);
+
+}
+
+GLuint lineShaderProg;
+
+void draw_line_system(ecs_iter_t* it) 
+{
+	if (lineShaderProg == NULL)
+	{
+		log_info("load lineShaderProg");
+		lineShaderProg = load_shader(line_vert, line_frag);
+	}
+
+	glUseProgram(lineShaderProg);
+
+	GLuint modelLoc = glGetUniformLocation(lineShaderProg, "model");
+	GLuint viewLoc = glGetUniformLocation(lineShaderProg, "view");
+	GLuint projectionLoc = glGetUniformLocation(lineShaderProg, "projection");
+	GLuint colorLoc = glGetUniformLocation(lineShaderProg, "color");
+
+	mat4x4 modelMat;
+	mat4x4_identity(modelMat);
+
+	CameraViewProj* cam_view_proj = ecs_get_mut(it->world, camera_entity, CameraViewProj);
+
+	glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->proj);
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->view);
+
+	DrawLine* lines = ecs_field(it, DrawLine, 1);
+	
+	for (size_t i = 0; i < it->count; i++)
+	{
+		DrawLine* line = &lines[i];
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, (const GLfloat*)modelMat);
+		glUniform4fv(colorLoc, 1, &line->color);
+
+		glBindVertexArray(line->VAO);
+		glDrawArrays(GL_LINES, 0, 2);
+	}
+}
+
+void lifetime_sys(ecs_iter_t* it)
+{
+	Lifetime* lifetimes = ecs_field(it, Lifetime, 1);
+
+	float delta_time = it->delta_time;
+	for (size_t i = 0; i < it->count; i++)
+	{
+		Lifetime* lifetime = &lifetimes[i];
+
+
+		if (lifetime->t > lifetime->lifetime)
+		{
+			ecs_add_id(it->world, it->entities[i], ecs_id(DeleteTag));
+		}
+
+		lifetime->t += delta_time;
+	}
+}
+
+void draw_box_collider(ecs_iter_t* it)
+{
+	LocalTransfrom* transforms = ecs_field(it, LocalTransfrom, 1);
+	BoxCollider2D* boxColliders = ecs_field(it, BoxCollider2D, 2);
+
+	float delta_time = it->delta_time;
+
+	Color color = color_red();
+
+	for (size_t i = 0; i < it->count; i++)
+	{
+		LocalTransfrom* transform = &transforms[i];
+		BoxCollider2D* boxCollider = &boxColliders[i];
+
+		float3 center = float3_add(transform->position, f2_to_f3(boxCollider->offset));
+
+		float3 half = float3_div(f2_to_f3(boxCollider->size), 2);
+
+		float3 topLeft = {0};
+		topLeft.x = center.x - half.x;
+		topLeft.y = center.y + half.y;		
+
+		float3 topRight = { 0 };
+		topRight.x = center.x + half.x;
+		topRight.y = center.y + half.y;
+
+		float3 bottomRight = { 0 };
+		bottomRight.x = center.x + half.x;
+		bottomRight.y = center.y - half.y;
+
+		float3 bottomLeft = { 0 };
+		bottomLeft.x = center.x - half.x;
+		bottomLeft.y = center.y - half.y;
+
+		draw_line(topLeft, topRight, color, 1);
+		draw_line(topRight, bottomRight, color, 1);
+		draw_line(bottomRight, bottomLeft, color, 1);
+		draw_line(bottomLeft, topLeft, color, 1);
+	}
+}
+
 void delete_entity_sys(ecs_iter_t* it) {
 
 	for (size_t i = 0; i < it->count; i++)
 	{
-		log_info("delete entity");
 		ecs_delete(it->world, it->entities[i]);
 	}
 }
 
 void setup_render_buffer_system(ecs_iter_t* it) {
 
-	ECS_COMPONENT(it->world, RenderData);
-
 	RenderImage* imges = ecs_field(it, RenderImage, 1);
 
 	for (int i = 0; i < it->count; i++)
 	{
-		log_info("setup RenderData");
 		RenderImage* trans = &imges[i];
 
 		RenderData quad_render = create_renderer(create_quad_mesh(), trans->texture);
@@ -265,10 +427,8 @@ void setup_render_buffer_system(ecs_iter_t* it) {
 	}
 }
 
-void render_object_system(ecs_iter_t* it) {
-
-	ECS_COMPONENT(it->world, CameraViewProj);
-
+void render_object_system(ecs_iter_t* it) 
+{
 	CameraViewProj* cam_view_proj = ecs_get_mut(it->world, camera_entity, CameraViewProj);
 	ShaderArray* shader_array = ecs_get_mut(it->world, shader_array_e, ShaderArray);
 
@@ -290,7 +450,7 @@ void render_object_system(ecs_iter_t* it) {
 		int32_t index = 0;
 		ecs_entity_t renderEntity;
 		glUseProgram(shader->shaderID);
-		printf("shader order: %i \n", shader->shaderOrder);
+		//printf("shader order: %i \n", shader->shaderOrder);
 		//update proj and view
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->proj);
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->view);
@@ -367,6 +527,10 @@ void define_ecs(int argc, char* argv[])
 	ECS_COMPONENT_DEFINE(world_def, CameraSetting);
 	ECS_COMPONENT_DEFINE(world_def, CameraViewProj);
 	ECS_COMPONENT_DEFINE(world_def, LocalTransfrom);
+	ECS_COMPONENT_DEFINE(world_def, BoxCollider2D);
+	ECS_COMPONENT_DEFINE(world_def, DrawLine);
+	ECS_COMPONENT_DEFINE(world_def, Lifetime);
+
 	ECS_COMPONENT_DEFINE(world_def, RenderData);
 	ECS_COMPONENT_DEFINE(world_def, RenderImage);
 	ECS_COMPONENT_DEFINE(world_def, Material);
@@ -380,8 +544,8 @@ void define_ecs(int argc, char* argv[])
 
 	ECS_SYSTEM(world_def, update_camera_matrix, EcsOnUpdate, CameraViewProj, [in] CameraSetting, [in] LocalTransfrom);
 	ECS_SYSTEM(world_def, player_move, EcsOnUpdate, LocalTransfrom, CameraSetting);
-
-	ecs_entity_t test_sys = ecs_system(world_def, {
+	
+	ecs_entity_t render_system = ecs_system(world_def, {
 		.entity = ecs_entity(world_def, { /* ecs_entity_desc_t */
 		.name = "setup_render_buffer_system",
 		.add = { ecs_dependson(EcsOnUpdate) }
@@ -391,11 +555,18 @@ void define_ecs(int argc, char* argv[])
 			{ecs_id(RenderData),.oper = EcsNot   },
 		},
 		.callback = setup_render_buffer_system
-		});
+	});
+
 	ECS_SYSTEM(world_def, render_object_system, EcsOnUpdate, 0);
+	ECS_SYSTEM(world_def, draw_box_collider, EcsOnUpdate, LocalTransfrom, BoxCollider2D);
+	ECS_SYSTEM(world_def, draw_line_system, EcsOnUpdate, DrawLine);
+
+	ECS_SYSTEM(world_def, lifetime_sys, EcsOnUpdate, Lifetime);
 
 	//cleanup
 	ECS_SYSTEM(world_def, cleanup_render_data, EcsOnUpdate, RenderData, DeleteTag);
+	ECS_SYSTEM(world_def, cleanup_line_render_data, EcsOnUpdate, DrawLine, DeleteTag);
+	
 	ECS_SYSTEM(world_def, delete_entity_sys, EcsOnUpdate, DeleteTag);
 
 	//manula sys creation
@@ -410,13 +581,23 @@ void define_ecs(int argc, char* argv[])
 	//});
 }
 
+void cleanup_line_render_data(ecs_iter_t* it) {
+
+	DrawLine* line = ecs_field(it, DrawLine, 1);
+
+	for (size_t i = 0; i < it->count; i++)
+	{
+		glDeleteBuffers(1, &line[i].VBO);
+		glDeleteVertexArrays(1, &line[i].VAO);
+	}
+}
+
 void cleanup_render_data(ecs_iter_t* it) {
 
 	RenderData* imges = ecs_field(it, RenderData, 1);
 
 	for (size_t i = 0; i < it->count; i++)
 	{
-		log_info("delete render data");
 		glDeleteBuffers(1, &imges[i].renderBuffer.VBO);
 		glDeleteVertexArrays(1, &imges[i].renderBuffer.VAO);
 	}
@@ -456,7 +637,7 @@ void update_camera_matrix(ecs_iter_t* it) {
 			mat4x4_perspective(data->proj, sett[i].fov, width / height, sett[i].nearPlane, sett[i].farPlane);
 		}
 
-		Vec3 center = { 0 };
+		float3 center = { 0 };
 
 		vec3_add((float*)&center, (float*)&trans[i].position, (float*)&camera_front);
 
@@ -477,27 +658,27 @@ void player_move(ecs_iter_t* it) {
 	{
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		{
-			Vec3 vec = camera_up;
+			float3 vec = camera_up;
 			vec3_mul_value(&vec, &vec, speed);
 			vec3_add(&trans[i].position, &trans[i].position, &vec);
 		}
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		{
-			Vec3 vec = camera_up;
+			float3 vec = camera_up;
 			vec3_mul_value(&vec, &vec, speed);
 			vec3_sub(&trans[i].position, &trans[i].position, &vec);
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		{
-			Vec3 vec = camera_right;
+			float3 vec = camera_right;
 			vec3_mul_value(&vec, &vec, speed);
 			vec3_add(&trans[i].position, &trans[i].position, &vec);
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
 		{
-			Vec3 vec = camera_right;
+			float3 vec = camera_right;
 			vec3_mul_value(&vec, &vec, speed);
 			vec3_sub(&trans[i].position, &trans[i].position, &vec);
 		}	
