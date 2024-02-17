@@ -145,14 +145,8 @@ RenderData create_renderer(MeshData mesh, GLuint texture)
 	return data;
 }
 
-LineRenderBuffers create_line_buffer(float3 start, float3 end)
+LineRenderBuffers create_line_buffer(float3* points, int len)
 {
-	float vertices[6] = 
-	{
-		start.x, start.y, start.z,
-		end.x, end.y, end.z,
-	};
-
 	LineRenderBuffers buffers;
 
 	GLuint VAO, VBO;
@@ -163,7 +157,7 @@ LineRenderBuffers create_line_buffer(float3 start, float3 end)
 	glBindVertexArray(VAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float3) * len, points, GL_STATIC_DRAW);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -173,6 +167,7 @@ LineRenderBuffers create_line_buffer(float3 start, float3 end)
 
 	buffers.VAO = VAO;
 	buffers.VBO = VBO;
+	buffers.len = len;
 
 	return buffers;
 }

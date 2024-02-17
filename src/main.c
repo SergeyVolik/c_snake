@@ -32,7 +32,7 @@ typedef struct DrawLine
 {
 	GLuint VBO;
 	GLuint VAO;
-
+	int buffLen;
 	Color color;
 } DrawLine;
 
@@ -288,15 +288,16 @@ int main(int argc, char* argv[])
 	exit(EXIT_SUCCESS);
 }
 
-void draw_line(float3 start, float3 end, Color color, float duration)
+void draw_line(float3* points, float len, Color color, float duration)
 {
 	ecs_world_t *world = world_default();
 	DrawLine line;
 	line.color = color;
 
-	LineRenderBuffers buffers = create_line_buffer(start, end);
+	LineRenderBuffers buffers = create_line_buffer(points, len);
 	line.VAO = buffers.VAO;
 	line.VBO = buffers.VBO;
+	line.buffLen = buffers.len;
 
 	Lifetime lifetime = { .lifetime = duration };
 	
@@ -341,7 +342,7 @@ void draw_line_system(ecs_iter_t* it)
 		glUniform4fv(colorLoc, 1, &line->color);
 
 		glBindVertexArray(line->VAO);
-		glDrawArrays(GL_LINES, 0, 2);
+		glDrawArrays(GL_LINES, 0, line->buffLen);
 	}
 }
 
@@ -398,10 +399,19 @@ void draw_box_collider(ecs_iter_t* it)
 		bottomLeft.x = center.x - half.x;
 		bottomLeft.y = center.y - half.y;
 
-		draw_line(topLeft, topRight, color, 1);
-		draw_line(topRight, bottomRight, color, 1);
-		draw_line(bottomRight, bottomLeft, color, 1);
-		draw_line(bottomLeft, topLeft, color, 1);
+		float3 points[8];
+		points[0] = topLeft;
+		points[1] = topRight;
+
+		points[2] = topRight;
+		points[3] = bottomRight;
+
+		points[4] = bottomRight;
+		points[5] = bottomLeft;
+
+		points[6] = bottomLeft;
+		points[7] = topLeft;
+		draw_line(points, 8, color, 1);
 	}
 }
 

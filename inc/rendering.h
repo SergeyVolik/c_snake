@@ -56,7 +56,7 @@ typedef struct
 {
 	GLuint VBO;
 	GLuint VAO;
-
+	int len;
 } LineRenderBuffers;
 
 typedef struct
@@ -147,7 +147,7 @@ Color* create_color_texture(int width, int height, Color color);
 MeshData create_quad_mesh();
 MeshData create_circle_mesh(int segments);
 EBOBuffer create_element_array_buffer(MeshData mesh);
-LineRenderBuffers create_line_buffer(float3 start, float3 end);
+LineRenderBuffers create_line_buffer(float3* points, int len);
 
 //shader
 GLuint load_shader(const char* vert_path, const char* fragm_path);
