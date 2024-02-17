@@ -6,6 +6,7 @@
 #include "log.h"
 #include "game_math.h"
 #include "file_helper.h"
+#include "flecs.h"
 
 void printf_color(Color* color)
 {
@@ -215,9 +216,10 @@ void rendering_init()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-ShaderProg shader_create(const char* vert_path, const char* fragm_path)
+ecs_entity_t shader_create(const char* vert_path, const char* fragm_path, ShaderProg* shader, ecs_world_t* world, char* shaderName)
 {
-	ShaderProg shader;
+	ECS_COMPONENT(world, ShaderProg);
+
 	GLuint vertex_shader, fragment_shader;
 
 	//create shader prog
@@ -226,16 +228,21 @@ ShaderProg shader_create(const char* vert_path, const char* fragm_path)
 	//log_info("read fragment_shader");
 	fragment_shader = shader_load_from_file(fragm_path, GL_FRAGMENT_SHADER);
 
-	log_info("glCreateProgram");
-	shader.shaderID = glCreateProgram();
-	glAttachShader(shader.shaderID, vertex_shader);
-	glAttachShader(shader.shaderID, fragment_shader);
-	glLinkProgram(shader.shaderID);
+	shader->shaderID = glCreateProgram();
+	glAttachShader(shader->shaderID, vertex_shader);
+	glAttachShader(shader->shaderID, fragment_shader);
+	glLinkProgram(shader->shaderID);
 
 	glDeleteShader(vertex_shader);
 	glDeleteShader(fragment_shader);
 
-	return shader;
+	ecs_entity_t shader_e = ecs_new(world, ShaderProg);
+	shader->shaderEntity = shader_e;
+
+	ecs_set_name(world, shader_e, shaderName);
+	ecs_set_id(world, shader_e, ecs_id(ShaderProg), sizeof(ShaderProg), shader);
+
+	return shader_e;
 }
 
 GLuint shader_load_from_text(char* shader_text, GLenum shader_type)

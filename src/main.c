@@ -32,7 +32,6 @@ void update_camera_matrix(ecs_iter_t* it);
 void player_move(ecs_iter_t* it);
 void cleanup_render_data(ecs_iter_t* it);
 void delete_entity_sys(ecs_iter_t* it);
-void render_clear_system(ecs_iter_t* it);
 
 ecs_entity_t prefab_instantiate(ecs_world_t* world, ecs_entity_t prefab, char* name);
 ecs_world_t* world_default();
@@ -48,6 +47,9 @@ const char* vert_shader_2_path = "./resources/shaders/vert_shader2.vert";
 const char* framg_shader_2_path = "./resources/shaders/fragm_shader2.frag";
 const char* tga_image_path = "./resources/dwsample-tga-640.tga";
 const char* png_image_path = "./resources/test.png";
+
+const char* sfx_path = "./resources/sfx_test.mp3";
+
 
 GLFWwindow* window;
 
@@ -71,9 +73,10 @@ ECS_COMPONENT_DECLARE(LocalTransfrom);
 ECS_COMPONENT_DECLARE(RenderData);
 ECS_COMPONENT_DECLARE(RenderImage);
 ECS_COMPONENT_DECLARE(ShaderProg);
+ECS_COMPONENT_DECLARE(Material);
+
 ECS_COMPONENT_DECLARE(ShaderRenderArray);
 ECS_COMPONENT_DECLARE(ShaderArray);
-
 
 ECS_TAG_DECLARE(Camera);
 ECS_TAG_DECLARE(DeleteTag);
@@ -85,6 +88,8 @@ ecs_entity_t shader_array_e;
 int main(int argc, char* argv[])
 {
 	define_ecs(argc, argv);
+
+	ecs_world_t* world_def = world_default();
 
 	camera_entity = init_camera(world_def);
 
@@ -135,29 +140,21 @@ int main(int argc, char* argv[])
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	shader_array_e = ecs_new(world_def, ShaderArray);
+	ecs_entity_t materialE = ecs_new(world_def, Material);
 
 	ShaderArray shader_array = {0};
 
-	shader_array.list = nav_list_new(sizeof(ShaderProg), 3);
-	shader_program = shader_create(vert_shader_default_path, framg_shader_default_path);
+	shader_array.array = buffer_new(sizeof(ShaderProg), 1);
+	ecs_entity_t shader2 = shader_create(vert_shader_default_path, framg_shader_default_path, &shader_program, world_def, "shader2");
 	shader_program.shaderOrder = 1000;
-	
-	nav_list_add(&shader_array.list, &shader_program);
+	buffer_add(&shader_array.array, &shader_program);
 
-	ecs_entity_t shader2 = ecs_new(world_def, ShaderProg);
-	ecs_set_id(world_def, shader2, ecs_id(ShaderProg), sizeof(ShaderProg), &shader_program);
-	ecs_set_name(world_def, shader2, "shader2");
-
-	ShaderProg shaderProgram2 = shader_create(vert_shader_2_path, framg_shader_2_path);
+	ShaderProg shaderProgram2;
+	ecs_entity_t shader1 = shader_create(vert_shader_2_path, framg_shader_2_path, &shaderProgram2, world_def, "shader1");
 	shaderProgram2.shaderOrder = 100;
 
-	ecs_entity_t shader1 = ecs_new(world_def, ShaderProg);
-	ecs_set_name(world_def, shader1, "shader1");
-	ecs_set_id(world_def, shader1, ecs_id(ShaderProg), sizeof(ShaderProg), &shaderProgram2);
+	buffer_add(&shader_array.array, &shaderProgram2);
 
-	nav_list_add(&shader_array.list, &shaderProgram2);
-
-	shader_array_sort(&shader_array);
 	ecs_set_id(world_def, shader_array_e, ecs_id(ShaderArray), sizeof(ShaderArray), &shader_array);
 
 	modelLoc = glGetUniformLocation(shader_program.shaderID, "model");
@@ -165,6 +162,7 @@ int main(int argc, char* argv[])
 	projectionLoc = glGetUniformLocation(shader_program.shaderID, "projection");
 	colorLoc = glGetUniformLocation(shader_program.shaderID, "overrideColor");
 
+	// prefab 1
 	LocalTransfrom img_transform = transform_default();
 
 	img_transform.position.x = 1.0f;
@@ -177,7 +175,9 @@ int main(int argc, char* argv[])
 	
 	ecs_set_name(world_def, reward_entity_prefab, "reward prefab");
 	
+	//prefab 2
 	snake_entity_prefab = ecs_new_w_id(world_def, EcsPrefab);
+
 	RenderImage img = { .texture = g_texture, .color = color_green(), .renderOrder = 0 };
 	img.shader = shader2;
 	LocalTransfrom transform_snake = transform_default();
@@ -250,12 +250,6 @@ void setup_render_buffer_system(ecs_iter_t* it) {
 	}
 }
 
-void render_clear_system(ecs_iter_t* it)
-{
-	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-}
-
 void render_object_system(ecs_iter_t* it) {
 
 	ECS_COMPONENT(it->world, CameraViewProj);
@@ -263,30 +257,42 @@ void render_object_system(ecs_iter_t* it) {
 	CameraViewProj* cam_view_proj = ecs_get_mut(it->world, camera_entity, CameraViewProj);
 	ShaderArray* shader_array = ecs_get_mut(it->world, shader_array_e, ShaderArray);
 
-	/*glClearColor(0, 0, 0, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);*/
-
 	AppTime time = app_time_get();
 
-	ShaderProg* shaders = ecs_field(it, ShaderProg, 1);
+	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
-	for (int i = 0; i < it->count; i++)
+	shader_array_sort(shader_array);
+
+	DynamicBufferIter shader_arr_iter = buffer_iter(&shader_array->array);
+
+	while (buffer_iter_next(&shader_arr_iter))
 	{
-		ecs_entity_t shader_e = it->entities[i];
+		ShaderProg* shader = ((ShaderProg*)buffer_iter_get(&shader_arr_iter));
+	
+		ecs_entity_t shader_e = shader->shaderEntity;
 
-		ShaderProg* shader = &shaders[i];
 		int32_t index = 0;
 		ecs_entity_t renderEntity;
 		glUseProgram(shader->shaderID);
-
+		printf("shader order: %i \n", shader->shaderOrder);
 		//update proj and view
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->proj);
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, (const GLfloat*)cam_view_proj->view);
 
+		/*ShaderRenderArray* shader_render_array = ecs_get_mut(it->world, shader_e, ShaderRenderArray);
+
+		DynamicBufferIter shader_render_arr_iter = buffer_iter(&shader_render_array->array);
+
+		while (buffer_iter_next(&shader_render_arr_iter))
+		{
+			ShaderProg* shader = ((ShaderProg*)buffer_iter_get(&shader_arr_iter));
+		}*/
+
 		while (renderEntity = ecs_get_target(it->world, shader_e, ShaderTag, index++))
 		{
 			if (false == ecs_has_id(it->world, renderEntity, ecs_id(RenderData)))
-			{				
+			{
 				log_info("No render data");
 				continue;
 			}
@@ -318,7 +324,6 @@ void render_object_system(ecs_iter_t* it) {
 				glDrawArrays(GL_TRIANGLES, 0, renderData->renderBuffer.meshData.verticesLen);
 			}
 		}
-		//log_info("End render");
 	}
 }
 
@@ -349,6 +354,7 @@ void define_ecs(int argc, char* argv[])
 	ECS_COMPONENT_DEFINE(world_def, LocalTransfrom);
 	ECS_COMPONENT_DEFINE(world_def, RenderData);
 	ECS_COMPONENT_DEFINE(world_def, RenderImage);
+	ECS_COMPONENT_DEFINE(world_def, Material);
 	ECS_COMPONENT_DEFINE(world_def, ShaderProg);
 	ECS_COMPONENT_DEFINE(world_def, ShaderRenderArray);
 	ECS_COMPONENT_DEFINE(world_def, ShaderArray);
@@ -371,8 +377,7 @@ void define_ecs(int argc, char* argv[])
 		},
 		.callback = setup_render_buffer_system
 		});
-	ECS_SYSTEM(world_def, render_clear_system, EcsOnUpdate, 0);
-	ECS_SYSTEM(world_def, render_object_system, EcsOnUpdate, ShaderProg);
+	ECS_SYSTEM(world_def, render_object_system, EcsOnUpdate, 0);
 
 	//cleanup
 	ECS_SYSTEM(world_def, cleanup_render_data, EcsOnUpdate, RenderData, DeleteTag);

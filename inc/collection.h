@@ -8,47 +8,49 @@
 //#define NDEBUG
 #include <assert.h>
 
-typedef struct NativeListData
+typedef unsigned char byte_t;
+
+typedef struct DynamicBufferData
 {
 	int count;
 	int capacity;
 	int element_size;
 	void* rawData;
-} NativeListData;
+} DynamicBufferData;
 
-typedef struct NativeList
+typedef struct DynamicBuffer
 {
-	NativeListData* data;
+	DynamicBufferData* data;
 
-} NativeList;
+} DynamicBuffer;
 
-typedef struct NativeListIter
+typedef struct DynamicBufferIter
 {
-	NativeList* list;
+	DynamicBuffer* list;
 	int current_index;
 
-} NativeListIter;
+} DynamicBufferIter;
 
-inline static bool nav_list_iter_next(NativeListIter* iter);
-inline static NativeListIter nav_list_iter(NativeList* list);
-inline static void* nav_list_iter_get(NativeListIter* iter);
-inline static NativeList nav_list_new(int element_size, int capacity);
-inline static void* nav_list_get_item(NativeList* array, int index);
-inline static void nav_list_set(NativeList* array, int index, void* data);
-inline static void nav_list_add(NativeList* array, void* data);
-inline static int nav_list_index_of(NativeList* array, void* elementData);
-inline static void nav_list_free(NativeList* array);
-inline static void nav_list_remove_at_spawn_back(NativeList* array, int index);
-inline static void* nav_array_get(NativeList* list);
+inline static bool buffer_iter_next(DynamicBufferIter* iter);
+inline static DynamicBufferIter buffer_iter(DynamicBuffer* list);
+inline static void* buffer_iter_get(DynamicBufferIter* iter);
+inline static DynamicBuffer buffer_new(int element_size, int capacity);
+inline static void* buffer_get_item(DynamicBuffer* array, int index);
+inline static void buffer_set(DynamicBuffer* array, int index, void* data);
+inline static void buffer_add(DynamicBuffer* array, void* data);
+inline static int buffer_index_of(DynamicBuffer* array, void* elementData);
+inline static void buffer_free(DynamicBuffer* array);
+inline static void buffer_remove_at_spawn_back(DynamicBuffer* array, int index);
+inline static void* buffer_get_data(DynamicBuffer* list);
 
-inline static NativeListIter nav_list_iter(NativeList* list)
+inline static DynamicBufferIter buffer_iter(DynamicBuffer* list)
 {
-	NativeListIter iter = { .list = list, .current_index = -1 };
+	DynamicBufferIter iter = { .list = list, .current_index = -1 };
 
 	return iter;
 }
 
-inline static bool nav_list_iter_next(NativeListIter* iter)
+inline static bool buffer_iter_next(DynamicBufferIter* iter)
 {
 	if (iter->current_index == iter->list->data->count-1)
 	{
@@ -60,16 +62,16 @@ inline static bool nav_list_iter_next(NativeListIter* iter)
 	return true;
 }
 
-inline static void* nav_list_iter_get(NativeListIter* iter)
+inline static void* buffer_iter_get(DynamicBufferIter* iter)
 {
-	return nav_list_get_item(iter->list, iter->current_index);
+	return buffer_get_item(iter->list, iter->current_index);
 }
 
-inline static NativeList nav_list_new(int element_size, int capacity)
+inline static DynamicBuffer buffer_new(int element_size, int capacity)
 {
-	NativeList list = {0};
+	DynamicBuffer list = {0};
 
-	list.data = malloc(sizeof(NativeListData));
+	list.data = malloc(sizeof(DynamicBufferData));
 	list.data->rawData = malloc(capacity * element_size);
 	assert(list.data != NULL);
 	assert(list.data->rawData);
@@ -80,43 +82,43 @@ inline static NativeList nav_list_new(int element_size, int capacity)
 	return list;
 }
 
-inline static void* nav_array_get(NativeList* list)
+inline static void* buffer_get_data(DynamicBuffer* list)
 {
 	return list->data->rawData;
 }
 
-inline static void* nav_list_get_item(NativeList* array, int index)
+inline static void* buffer_get_item(DynamicBuffer* array, int index)
 {
-	//assert(index >= 0);
-	//assert(index <= array->count - 1);
+	assert(index >= 0);
+	assert(index <= array->data->count - 1);
 
-	return ((char*)array->data->rawData) + index * (array->data->element_size);
+	return ((byte_t*)array->data->rawData) + index * (array->data->element_size);
 }
 
-inline static void nav_list_set(NativeList* array, int index, void* data)
+inline static void buffer_set(DynamicBuffer* array, int index, void* data)
 {
-	void* toSet = ((char*)array->data->rawData) + index * array->data->element_size;
+	void* toSet = ((byte_t*)array->data->rawData) + index * array->data->element_size;
 	memcpy(toSet, data, array->data->element_size);
 }
 
-inline static void nav_list_add(NativeList* array, void* data)
+inline static void buffer_add(DynamicBuffer* array, void* data)
 {
 	if (array->data->capacity == array->data->count)
 	{
-		array->data->capacity *= 2;
+		array->data->capacity += 50;
 		int newSize = array->data->capacity * array->data->element_size;
 		void* new_array = realloc(array->data->rawData, newSize);
 		assert(new_array != NULL);
 		array->data->rawData = new_array;
 	}
 
-	nav_list_set(array, array->data->count, data);
+	buffer_set(array, array->data->count, data);
 	array->data->count++;
 }
 
-inline static int nav_list_index_of(NativeList* array, void* elementData)
+inline static int buffer_index_of(DynamicBuffer* array, void* elementData)
 {
-	char* pointer = (char*)array->data->rawData;
+	byte_t* pointer = (byte_t*)array->data->rawData;
 	size_t size = array->data->element_size;
 
 	for (int i = 0; i < array->data->count; i++)
@@ -132,7 +134,16 @@ inline static int nav_list_index_of(NativeList* array, void* elementData)
 	return -1;
 }
 
-inline static void nav_list_free(NativeList* array)
+inline static void buffer_remove_at_spawn_back(DynamicBuffer* array, int index)
+{
+	void* last = ((byte_t*)array->data->rawData) + array->data->count * array->data->element_size;
+	void* toRemove = ((byte_t*)array->data->rawData) + index * array->data->element_size;
+
+	memcpy(toRemove, last, array->data->element_size);
+	array->data->count--;
+}
+
+inline static void buffer_free(DynamicBuffer* array)
 {
 	if (array->data == NULL)
 		return;
@@ -140,14 +151,4 @@ inline static void nav_list_free(NativeList* array)
 	free(array->data->rawData);
 	free(array->data);
 }
-
-inline static void nav_list_remove_at_spawn_back(NativeList* array, int index)
-{
-	void* last = ((char*)array->data->rawData) + array->data->count * array->data->element_size;
-	void* toRemove = ((char*)array->data->rawData) + index * array->data->element_size;
-
-	memcpy(toRemove, last, array->data->element_size);
-	array->data->count--;
-}
-
 #endif

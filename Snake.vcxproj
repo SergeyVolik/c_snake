@@ -157,6 +157,7 @@
     <ClCompile Include="src\game_math.c" />
     <ClCompile Include="src\app.c" />
     <ClCompile Include="src\glad.c" />
+    <ClCompile Include="src\hashmap.c" />
     <ClCompile Include="src\image.c" />
     <ClCompile Include="src\LocalTransform.c" />
     <ClCompile Include="src\log.c" />
@@ -176,6 +177,7 @@
     <ClInclude Include="inc\file_helper.h" />
     <ClInclude Include="inc\flecs.h" />
     <ClInclude Include="inc\game_math.h" />
+    <ClInclude Include="inc\hashmap.h" />
     <ClInclude Include="inc\image.h" />
     <ClInclude Include="inc\linmath.h" />
     <ClInclude Include="inc\LocalTransform.h" />

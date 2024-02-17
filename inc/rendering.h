@@ -36,6 +36,12 @@ typedef struct MeshData
 
 } MeshData;
 
+typedef struct Material
+{
+	ecs_entity_t shaderE;
+
+} Material;
+
 typedef struct
 {
 	GLuint VBO;
@@ -65,12 +71,13 @@ typedef struct ShaderProg
 {
 	GLuint shaderID;
 	int shaderOrder;
+	ecs_entity_t shaderEntity;
 
 } ShaderProg;
 
 typedef struct ShaderArray
 {
-	NativeList list;
+	DynamicBuffer array;
 
 } ShaderArray;
 
@@ -83,7 +90,7 @@ typedef struct ShaderRenderOrderData
 
 typedef struct ShaderRenderArray
 {
-	NativeList* data;
+	DynamicBuffer array;
 
 } ShaderRenderArray;
 
@@ -105,31 +112,7 @@ static int comapre_int(const void* a, const void* b)
 
 inline static void shader_array_sort(ShaderArray* array)
 {	
-	/*log_info("sort size = %i", array->data.data->count);
-	void* data = array->data.data;
-	qsort(data, array->data.data->count, array->data.data->element_size, shader_array_compare);*/
-
-	NativeListIter iter = nav_list_iter(&array->list);
-	printf("shader order: ");
-	while (nav_list_iter_next(&iter))
-	{
-		printf("%i,", ((ShaderProg*)nav_list_iter_get(&iter))->shaderOrder);
-	}
-
-	printf("\n");
-
-	qsort(array->list.data->rawData, 2, sizeof(ShaderProg), shader_array_compare);
-
-	printf("shader order: ");
-
-	iter = nav_list_iter(&array->list);
-
-	while (nav_list_iter_next(&iter))
-	{
-		printf("%i,", ((ShaderProg*)nav_list_iter_get(&iter))->shaderOrder);
-	}
-
-	printf("\n");
+	qsort(array->array.data->rawData, 2, sizeof(ShaderProg), shader_array_compare);
 }
 
 static int render_array_compare(const void* a, const void* b)
@@ -158,7 +141,7 @@ MeshData create_circle_mesh(int segments);
 EBOBuffer create_element_array_buffer(MeshData mesh);
 
 //shader
-ShaderProg shader_create(const char* vert_path, const char* fragm_path);
+ecs_entity_t shader_create(const char* vert_path, const char* fragm_path, ShaderProg* shader, ecs_world_t* world, char* shaderName);
 GLuint shader_load_from_text(char* shader_text, GLenum shader_type);
 GLuint shader_load_from_file(char* shader_path, GLenum shader_type);
 
